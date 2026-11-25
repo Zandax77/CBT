@@ -6,6 +6,7 @@ use App\Models\Exam;
 use App\Models\Question;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class QuestionController extends Controller
 {
@@ -18,12 +19,101 @@ class QuestionController extends Controller
         );
     }
 
-    /** Daftar soal ujian. */
-    public function index(Exam $exam)
+    /** Daftar soal ujian (mendukung filter jenis & pagination per halaman). */
+    public function index(Request $request, Exam $exam)
     {
         $this->authorizeExam($exam);
-        $questions = $exam->questions()->orderBy('position')->get();
-        return view('questions.index', compact('exam', 'questions'));
+
+        $typeFilter = $request->query('type');
+        $query = $exam->questions()->orderBy('position');
+
+        if ($typeFilter && in_array($typeFilter, ['PG','PG_MULTI','BENAR_SALAH','MENJODOHKAN'], true)) {
+            $query->where('type', $typeFilter);
+        }
+
+        $perPageParam = $request->query('per_page', '20');
+        if ($perPageParam === 'all') {
+            $questions = $query->get();
+        } else {
+            $questions = $query->paginate((int) $perPageParam)->withQueryString();
+        }
+
+        $totalQuestions = $exam->questions()->count();
+        $totalWeight    = $exam->questions()->sum('weight');
+        $typeCounts     = $exam->questions()->selectRaw('type, count(*) as total')->groupBy('type')->pluck('total', 'type')->toArray();
+
+        return view('questions.index', compact('exam', 'questions', 'totalQuestions', 'totalWeight', 'typeCounts', 'typeFilter', 'perPageParam'));
+    }
+
+    /**
+     * Acak urutan soal menurut jenisnya.
+     * Soal diacak per kelompok jenis (Pilihan Ganda, Benar/Salah, Menjodohkan),
+     * dan nomor urut master (position) diperbarui dari 1..N.
+     */
+    public function shuffleByType(Exam $exam)
+    {
+        $this->authorizeExam($exam);
+
+        $counts = [];
+
+        DB::transaction(function () use ($exam, &$counts) {
+            $questions = $exam->questions()->get();
+            if ($questions->isEmpty()) {
+                return;
+            }
+
+            // Standar urutan kelompok jenis
+            $typeOrder = ['PG', 'PG_MULTI', 'BENAR_SALAH', 'MENJODOHKAN'];
+            $grouped   = $questions->groupBy('type');
+
+            $shuffled = collect();
+            foreach ($typeOrder as $t) {
+                if ($grouped->has($t)) {
+                    $items = $grouped->get($t)->shuffle();
+                    $counts[$t] = $items->count();
+                    $shuffled = $shuffled->concat($items);
+                }
+            }
+            foreach ($grouped as $type => $items) {
+                if (!in_array($type, $typeOrder, true)) {
+                    $itemsShuffled = $items->shuffle();
+                    $counts[$type] = $itemsShuffled->count();
+                    $shuffled = $shuffled->concat($itemsShuffled);
+                }
+            }
+
+            // Offset sementara untuk mencegah pelanggaran unique(['exam_id', 'position'])
+            $tempOffset = 1000000;
+            foreach ($shuffled as $i => $q) {
+                $q->update(['position' => $tempOffset + $i + 1]);
+            }
+
+            // Update ke urutan final 1 .. N
+            foreach ($shuffled as $i => $q) {
+                $q->update(['position' => $i + 1]);
+            }
+        });
+
+        if (empty($counts)) {
+            return redirect()->route('questions.list', $exam)
+                ->with('warning', 'Tidak ada butir soal untuk diacak.');
+        }
+
+        $typeLabels = [
+            'PG'          => 'Pilihan Ganda',
+            'PG_MULTI'    => 'PG Kompleks',
+            'BENAR_SALAH' => 'Benar/Salah',
+            'MENJODOHKAN' => 'Menjodohkan',
+        ];
+        $summary = [];
+        foreach ($counts as $t => $c) {
+            $label = $typeLabels[$t] ?? $t;
+            $summary[] = "$c $label";
+        }
+        $summaryText = implode(', ', $summary);
+
+        return redirect()->route('questions.list', $exam)
+            ->with('success', "Urutan soal berhasil diacak menurut jenisnya ($summaryText). Nomor urut soal telah diperbarui!");
     }
 
     /** Form tambah soal. */
@@ -115,7 +205,7 @@ class QuestionController extends Controller
     private function validateQuestion(Request $r): array
     {
         return $r->validate([
-            'type'          => 'required|in:PG,BENAR_SALAH,MENJODOHKAN',
+            'type'          => 'required|in:PG,PG_MULTI,BENAR_SALAH,MENJODOHKAN',
             'question_text' => 'required|string|max:5000',
             'weight'        => 'required|numeric|min:0.1|max:100',
             'image'         => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:3072',
@@ -126,7 +216,9 @@ class QuestionController extends Controller
             'opt_c'         => 'nullable|string|max:500',
             'opt_d'         => 'nullable|string|max:500',
             'opt_e'         => 'nullable|string|max:500',
-            'answer_pg'     => 'nullable|in:A,B,C,D,E',
+            // Allow multiple correct answers for PG
+            'answer_pg'     => 'nullable|array',
+            'answer_pg.*'   => 'in:A,B,C,D,E',
             'answer_bs'     => 'nullable|in:A,B',
             // Menjodohkan
             'premise.*'     => 'nullable|string|max:300',
@@ -137,7 +229,7 @@ class QuestionController extends Controller
 
     private function buildOptions(Request $r, string $type): array
     {
-        if ($type === 'PG') {
+        if ($type === 'PG' || $type === 'PG_MULTI') {
             $opts = [];
             foreach (['A' => 'opt_a', 'B' => 'opt_b', 'C' => 'opt_c', 'D' => 'opt_d', 'E' => 'opt_e'] as $k => $f) {
                 $val = trim($r->input($f, ''));
@@ -168,8 +260,18 @@ class QuestionController extends Controller
 
     private function buildAnswerKey(Request $r, string $type, array $options): string
     {
-        if ($type === 'PG')         return strtoupper($r->input('answer_pg', 'A'));
-        if ($type === 'BENAR_SALAH') return strtoupper($r->input('answer_bs', 'A'));
+        if ($type === 'PG' || $type === 'PG_MULTI') {
+            // Support multiple correct answers, return comma-separated values
+            $answers = $r->input('answer_pg', []);
+            if (!is_array($answers)) {
+                $answers = [$answers];
+            }
+            $answers = array_map('strtoupper', $answers);
+            return implode(',', $answers);
+        }
+        if ($type === 'BENAR_SALAH') {
+            return strtoupper($r->input('answer_bs', 'A'));
+        }
         return trim($r->input('match_key', ''));
     }
 }

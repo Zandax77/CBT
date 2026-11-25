@@ -1,0 +1,120 @@
+nomor,tipe_soal,pertanyaan,opsi_a,opsi_b,opsi_c,opsi_d,opsi_e,kunci_jawaban,bobot,pasangan_1,pasangan_2,pasangan_3,pasangan_4,pasangan_5,pasangan_6,pasangan_7,pasangan_8
+1,PG,"[Web PHP Native] Perhatikan potongan kode form HTML dan skrip PHP berikut:
+
+// form.html
+<form action=""proses.php"" method=""POST"" enctype=""multipart/form-data"">
+  <input type=""file"" name=""foto_profil"">
+  <button type=""submit"">Upload</button>
+</form>
+
+Variabel superglobal PHP yang digunakan pada file `proses.php` untuk mengambil nama asli berkas yang diunggah pengguna adalah ...",$_POST['foto_profil']['name'],$_FILES['foto_profil']['name'],$_REQUEST['foto_profil']['filename'],$_UPLOAD['foto_profil']['tmp_name'],$_GET['foto_profil']['name'],B,1,,,,,,,,
+2,PG,"[Web PHP Native] Seorang pengembang web membuat fitur autentikasi berbasis sesi menggunakan PHP Native. Setelah pengguna berhasil login, data username disimpan pada `$_SESSION['username']`. Sintaks PHP yang tepat untuk mengecek apakah pengguna belum login sehingga harus diarahkan kembali ke halaman `login.php` adalah ...","if (!isset($_SESSION['username'])) { header(""Location: login.php""); exit; }","if (empty($_COOKIE['username'])) { redirect(""login.php""); }","if (session_destroy($_SESSION['username'])) { include ""login.php""; }","if (is_null($_POST['username'])) { move_page(""login.php""); }","if (!session_start()) { require ""login.php""; }",A,1,,,,,,,,
+3,PG,"[Web PHP Native] Perhatikan potongan kode PHP Native berikut:
+
+<?php
+$nilai = [80, 90, 75, 85];
+$hasil = array_filter($nilai, function($n) {
+    return $n >= 80;
+});
+echo count($hasil);
+?>
+
+Output yang ditampilkan di layar browser ketika kode tersebut dijalankan adalah ...",1,2,3,4,80,C,1,,,,,,,,
+4,PG,"[Web PHP Native] Dalam PHP Native, perbedaan utama antara penggunaan fungsi `include 'header.php';` dan `require 'header.php';` apabila berkas `header.php` tidak ditemukan di direktori server adalah ...","`include` menghasilkan Fatal Error dan menghentikan skrip, sedangkan `require` hanya memunculkan Warning","`require` menghasilkan Fatal Error dan menghentikan eksekusi skrip, sedangkan `include` memunculkan Warning dan tetap melanjutkan baris berikutnya","`include` hanya dapat memuat file HTML, sedangkan `require` khusus untuk file konfigurasi PHP","`require` otomatis membuat file baru jika tidak ditemukan, sedangkan `include` mengabaikannya","Keduanya sama-sama menghentikan eksekusi skrip tanpa menampilkan pesan kesalahan apa pun",B,1,,,,,,,,
+5,PG,"[Web PHP Native] Saat memproses input form pendaftaran pengguna pada PHP Native, seorang siswa ingin menghapus spasi berlebih di awal dan akhir string input serta mengubah karakter khusus HTML seperti `<` dan `>` menjadi entitas aman untuk mencegah serangan XSS saat ditampilkan kembali. Kombinasi fungsi PHP yang tepat adalah ...","explode() dan implode()","trim() dan htmlspecialchars()","strlen() dan str_replace()","md5() dan addslashes()","substr() dan strip_tags()",B,1,,,,,,,,
+6,PG,"[Mobile Flutter] Perhatikan potongan kode widget Flutter berikut:
+
+Column(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    Text('Judul'),
+    Text('Subjudul'),
+  ],
+)
+
+Fungsi dari properti `crossAxisAlignment: CrossAxisAlignment.start` pada widget `Column` di atas adalah ...","Mengatur posisi anak-anak widget secara vertikal agar berada di tengah layar","Meratakan seluruh anak widget ke sisi kiri (awal sumbu horizontal) dari Column","Memberikan jarak yang sama rata di antara setiap elemen secara vertikal","Membuat ukuran lebar teks otomatis memenuhi seluruh lebar layar","Mengubah arah susunan widget dari vertikal menjadi horizontal",B,1,,,,,,,,
+7,PG,"[Mobile Flutter] Seorang siswa membuat halaman penghitung (counter) di Flutter menggunakan `StatefulWidget`. Ketika tombol ditekan, nilai variabel `int counter = 0;` ditambah menjadi `counter++`, namun angka pada widget `Text('$counter')` di layar tidak berubah. Penyebab utama masalah tersebut adalah ...","Variabel `counter` harus dideklarasikan menggunakan kata kunci `const`","Perubahan nilai `counter++` tidak dibungkus di dalam fungsi `setState(() { ... })`","Widget `Text` tidak mendukung interpolasi string pada tipe data `int`","Halaman harus menggunakan `StatelessWidget` agar tampilan dapat diperbarui","Aplikasi harus dijalankan ulang menggunakan Hot Restart setiap kali tombol ditekan",B,1,,,,,,,,
+8,PG,"[Mobile Flutter] Dalam pengembangan antarmuka Flutter, apabila terdapat sekumpulan widget di dalam `Column` yang tingginya melebihi tinggi layar perangkat sehingga muncul peringatan garis kuning-hitam (`RenderFlex overflowed`), widget pembungkus yang paling tepat untuk mengatasi masalah tersebut adalah ...",SizedBox,SingleChildScrollView,AspectRatio,SafeArea,Opacity,B,1,,,,,,,,
+9,PG,"[Mobile Flutter] Perhatikan kode navigasi antarhalaman pada Flutter berikut:
+
+Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(builder: (context) => const HomePage()),
+);
+
+Perilaku yang terjadi ketika kode di atas dijalankan dari halaman `LoginPage` menuju `HomePage` adalah ...","`HomePage` ditumpuk di atas `LoginPage`, sehingga tombol Back akan kembali ke `LoginPage`","`HomePage` menggantikan `LoginPage` pada stack navigasi, sehingga pengguna tidak bisa kembali ke `LoginPage` dengan tombol Back","Seluruh riwayat halaman dihapus kecuali halaman pertama saat aplikasi dibuka","`HomePage` dibuka sebagai dialog pop-up transparan di atas `LoginPage`","Aplikasi otomatis tertutup jika tombol Back ditekan di `LoginPage`",B,1,,,,,,,,
+10,PG,"[Mobile Flutter] Pada berkas konfigurasi proyek Flutter `pubspec.yaml`, bagian yang digunakan untuk mendaftarkan folder gambar lokal (misalnya `assets/images/`) agar dapat ditampilkan menggunakan widget `Image.asset()` adalah ...",dependencies:,dev_dependencies:,"flutter: -> assets:","environment: -> sdk:","flutter: -> uses-material-design:",C,1,,,,,,,,
+11,PG,"[Database MySQL] Perhatikan struktur dua tabel berikut pada MySQL:
+- `jurusan` (`kode_jurusan` VARCHAR(5) PK, `nama_jurusan` VARCHAR(50))
+- `siswa` (`nis` VARCHAR(10) PK, `nama_siswa` VARCHAR(100), `kode_jurusan` VARCHAR(5) FK)
+
+Query SQL yang tepat untuk menampilkan seluruh data `nama_siswa` beserta `nama_jurusan`-nya adalah ...","SELECT s.nama_siswa, j.nama_jurusan FROM siswa s INNER JOIN jurusan j ON s.kode_jurusan = j.kode_jurusan;","SELECT s.nama_siswa, j.nama_jurusan FROM siswa s CROSS JOIN jurusan j WHERE s.nis = j.kode_jurusan;","SELECT nama_siswa, nama_jurusan FROM siswa UNION SELECT kode_jurusan FROM jurusan;","SELECT s.nama_siswa, j.nama_jurusan FROM siswa s GROUP BY j.kode_jurusan;","SELECT s.nama_siswa, j.nama_jurusan FROM siswa s JOIN jurusan j USING (nis);",A,1,,,,,,,,
+12,PG,"[Database MySQL] Perhatikan query MySQL berikut:
+
+SELECT kelas, COUNT(*) AS total_siswa
+FROM siswa
+WHERE jenis_kelamin = 'P'
+GROUP BY kelas
+HAVING COUNT(*) >= 15;
+
+Urutan logis eksekusi penyaringan data pada query di atas adalah ...","Menyaring kelompok kelas minimal 15 siswa dulu, baru menyaring siswa perempuan","Menyaring siswa perempuan terlebih dahulu, mengelompokkan berdasarkan kelas, lalu menampilkan kelas dengan jumlah minimal 15 siswa","Mengelompokkan seluruh siswa tanpa syarat, lalu menghapus baris laki-laki","Mengurutkan jumlah siswa dari yang terbanyak maksimal 15 baris","Menghitung total seluruh siswa di sekolah sebelum dibagi per kelas",B,1,,,,,,,,
+13,PG,"[Database MySQL] Seorang administrator database ingin mengubah struktur tabel `produk` yang sudah ada dengan menambahkan kolom baru bernama `stok` bertipe `INT` dengan nilai bawaan `0` setelah kolom `harga`. Perintah DDL MySQL yang tepat adalah ...","UPDATE TABLE produk ADD COLUMN stok INT DEFAULT 0 AFTER harga;","ALTER TABLE produk ADD COLUMN stok INT DEFAULT 0 AFTER harga;","MODIFY TABLE produk INSERT stok INT DEFAULT 0;","CREATE COLUMN stok INT DEFAULT 0 ON produk AFTER harga;","CHANGE TABLE produk ADD stok INT DEFAULT 0;",B,1,,,,,,,,
+14,PG,"[Database MySQL] Pada saat merancang tabel `pembayaran` di MySQL yang menyimpan nilai nominal uang hingga dua angka di belakang koma (contoh: 1250000.50), tipe data yang paling akurat agar terhindar dari galat pembulatan bilangan titik kambang (floating-point) adalah ...","FLOAT(10,2)",DOUBLE,"DECIMAL(12,2)",VARCHAR(15),MEDIUMINT,C,1,,,,,,,,
+15,PG,"[Database MySQL] Perintah SQL pada MySQL yang digunakan untuk menghapus seluruh baris data di dalam tabel `log_aktivitas` secara cepat sekaligus mereset ulang penghitung `AUTO_INCREMENT` kembali ke 1 tanpa menghapus struktur tabelnya adalah ...","DROP TABLE log_aktivitas;","DELETE FROM log_aktivitas WHERE id > 0;","TRUNCATE TABLE log_aktivitas;","REMOVE ALL FROM log_aktivitas;","ALTER TABLE log_aktivitas DROP DATA;",C,1,,,,,,,,
+16,PG_MULTI,"[Web PHP Native] Perhatikan potongan kode PHP Native berikut untuk memproses form pendaftaran:
+
+<?php
+$email = $_POST['email'];
+$pass  = $_POST['password'];
+$hash  = password_hash($pass, PASSWORD_DEFAULT);
+?>
+
+Manakah pernyataan yang BENAR mengenai penanganan password dan form pada PHP Native? (Pilih 2 jawaban yang benar)","Fungsi `password_hash()` menghasilkan salt acak secara otomatis sehingga dua password yang sama menghasilkan hash berbeda","Untuk mencocokkan password saat proses login, digunakan fungsi `password_verify($passInput, $hashTersimpan)`","Nilai `$hash` dapat dikembalikan ke bentuk password asli menggunakan fungsi `password_decrypt($hash)`","Panjang kolom password pada tabel database cukup diset `VARCHAR(32)` untuk menampung hasil `PASSWORD_DEFAULT`","Superglobal `$_POST` dapat langsung dibaca meskipun atribut `method` pada tag `<form>` tidak diisi (default GET)","A,B",2,,,,,,,,
+17,PG_MULTI,"[Web PHP Native] Dalam pemrograman berorientasi objek (OOP) pada PHP Native, perhatikan deklarasi class berikut:
+
+class Akun {
+    private string $saldo;
+    protected string $pemilik;
+    public function __construct(string $pemilik, string $saldo) {
+        $this->pemilik = $pemilik;
+        $this->saldo = $saldo;
+    }
+}
+
+Analisis yang tepat terkait hak akses (visibility) pada class di atas adalah ... (Pilih 2 jawaban yang benar)","Properti `$saldo` hanya dapat diakses dan diubah oleh method di dalam class `Akun` itu sendiri","Properti `$pemilik` dapat diakses oleh class `Akun` serta class turunannya (subclass) yang menggunakan `extends`","Properti `$saldo` dapat langsung diubah dari luar class melalui `$objek->saldo = '50000'`","Method `__construct` akan dipanggil secara otomatis saat objek baru diinstansiasi dengan kata kunci `new`","Deklarasi tipe properti `string` tidak didukung pada PHP versi 7.4 ke atas","A,B",2,,,,,,,,
+18,PG_MULTI,"[Web PHP Native] Seorang developer web ingin menyimpan preferensi tema tampilan pengguna (gelap/terang) menggunakan Cookie di PHP Native. Praktik penggunaan fungsi `setcookie()` yang tepat adalah ... (Pilih 2 jawaban yang benar)","Memanggil fungsi `setcookie()` sebelum ada output HTML atau karakter apa pun yang dikirim ke browser","Membaca nilai cookie yang sudah tersimpan di browser pada request berikutnya melalui superglobal `$_COOKIE`","Menghapus cookie dengan mengatur waktu kedaluwarsa (expires) ke waktu lampau, misalnya `time() - 3600`","Menyimpan data sensitif seperti password mentah ke dalam cookie karena cookie tidak dapat dilihat pengguna","Nilai cookie langsung tersedia di dalam array `$_COOKIE` pada baris kode tepat di bawah pemanggilan `setcookie()` tanpa reload","A,B",2,,,,,,,,
+19,PG_MULTI,"[Mobile Flutter] Perhatikan potongan kode Flutter berikut:
+
+class ProfilCard extends StatelessWidget {
+  final String nama;
+  const ProfilCard({super.key, required this.nama});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.person),
+        title: Text(nama),
+      ),
+    );
+  }
+}
+
+Pernyataan yang BENAR mengenai widget `ProfilCard` di atas adalah ... (Pilih 3 jawaban yang benar)","Properti `nama` bersifat immutable (tidak dapat diubah setelah objek `ProfilCard` dibuat)","Parameter `required this.nama` mewajibkan pengirim memberikan argumen `nama` saat memanggil `ProfilCard`","Penggunaan kata kunci `const` pada `Icon(Icons.person)` membantu Flutter mengoptimalkan performa rendering dengan mencegah rebuild yang tidak perlu","Widget `ProfilCard` memiliki method `setState()` bawaan untuk memperbarui nilai `nama` secara internal","Widget `ListTile` hanya dapat digunakan di dalam `Scaffold` dan akan error jika diletakkan di dalam `Card`","A,B,C",2,,,,,,,,
+20,PG_MULTI,"[Mobile Flutter] Dalam membangun layout responsif pada aplikasi mobile menggunakan Flutter, widget dan properti yang berfungsi membagi ruang kosong di dalam `Row` atau `Column` berdasarkan rasio proporsional adalah ... (Pilih 2 jawaban yang benar)","Widget `Expanded` dengan mengatur properti `flex` pada masing-masing anak widget","Widget `Flexible` dengan mengatur properti `flex` dan `fit`","Widget `Divider` dengan mengatur properti `thickness`","Widget `CircleAvatar` dengan mengatur properti `radius`","Widget `SnackBar` dengan mengatur properti `duration`","A,B",2,,,,,,,,
+21,PG_MULTI,"[Mobile Flutter] Saat membuat formulir input data siswa pada Flutter menggunakan widget `Form` dan `TextFormField`, mekanisme validasi input yang benar meliputi langkah-langkah berikut ... (Pilih 3 jawaban yang benar)","Membuat objek `final _formKey = GlobalKey<FormState>();` dan memasangkannya ke properti `key` pada widget `Form`","Menambahkan fungsi `validator: (value) { ... }` pada setiap `TextFormField` yang mengembalikan pesan error `String` jika tidak valid atau `null` jika valid","Memanggil `_formKey.currentState!.validate()` ketika tombol Simpan ditekan untuk memicu seluruh validator","Menggunakan `StatelessWidget` tanpa controller maupun key karena `Form` otomatis menyimpan seluruh data secara permanen","Mengembalikan nilai boolean `true` di dalam fungsi `validator` untuk menandakan bahwa input pengguna sudah valid","A,B,C",2,,,,,,,,
+22,PG_MULTI,"[Database MySQL] Pada perancangan basis data relasional di MySQL, konsep normalisasi (1NF, 2NF, 3NF) diterapkan untuk mencapai tujuan-tujuan berikut ... (Pilih 3 jawaban yang benar)","Mengurangi duplikasi (redundansi) data yang tidak perlu di dalam tabel","Mencegah terjadinya anomali penyisipan (insert), pembaruan (update), dan penghapusan (delete)","Memastikan setiap atribut non-key bergantung sepenuhnya hanya pada Primary Key (menghilangkan ketergantungan transitif pada 3NF)","Menggabungkan seluruh tabel dalam satu database menjadi satu tabel raksasa agar tidak perlu menggunakan perintah JOIN","Menghapus seluruh constraint Foreign Key agar data bebas dimasukkan tanpa validasi","A,B,C",2,,,,,,,,
+23,PG_MULTI,"[Database MySQL] Perhatikan perancangan indeks (INDEX) pada tabel `transaksi` di MySQL yang memiliki jutaan baris data. Pernyataan yang tepat mengenai penggunaan `INDEX` adalah ... (Pilih 2 jawaban yang benar)","Mempercepat kinerja query pencarian (`SELECT`) yang menggunakan kolom berindeks pada klausa `WHERE`, `JOIN`, atau `ORDER BY`","Menambah sedikit beban waktu dan ruang penyimpanan saat operasi `INSERT`, `UPDATE`, dan `DELETE` karena struktur indeks ikut diperbarui","Kolom `PRIMARY KEY` dan `UNIQUE` pada MySQL secara otomatis dibuatkan indeks oleh sistem database","Membuat indeks pada seluruh kolom tabel selalu membuat proses penulisan data menjadi 10 kali lebih cepat","Indeks hanya dapat dibuat pada kolom bertipe angka (`INT`) dan tidak berlaku untuk kolom `VARCHAR`","A,B",2,,,,,,,,
+24,BENAR_SALAH,"[Web PHP Native] Pada bahasa pemrograman PHP, operator perbandingan `===` (identik) akan menghasilkan nilai `true` apabila kedua operan memiliki nilai yang sama DAN tipe data yang sama, sehingga ekspresi `""10"" === 10` bernilai `false`.",Benar,Salah,,,,A,1,,,,,,,,
+25,BENAR_SALAH,"[Web PHP Native] Variabel yang dideklarasikan di luar fungsi (lingkup global) di dalam skrip PHP Native dapat langsung diakses di dalam tubuh fungsi tanpa menggunakan kata kunci `global` atau array `$GLOBALS`.",Benar,Salah,,,,B,1,,,,,,,,
+26,BENAR_SALAH,"[Mobile Flutter] Di dalam bahasa Dart, tipe data `String nama;` (tanpa tanda tanya `?`) tidak diperbolehkan bernilai `null` secara default karena fitur Null Safety, kecuali dideklarasikan sebagai nullable `String? nama;`.",Benar,Salah,,,,A,1,,,,,,,,
+27,BENAR_SALAH,"[Mobile Flutter] Pada siklus hidup `StatefulWidget` di Flutter, method `dispose()` dipanggil tepat sebelum objek `State` dihancurkan secara permanen, sehingga cocok digunakan untuk membersihkan `TextEditingController` agar tidak terjadi kebocoran memori (memory leak).",Benar,Salah,,,,A,1,,,,,,,,
+28,BENAR_SALAH,"[Mobile Flutter] Widget `ListView.builder` akan membangun seluruh 10.000 item widget secara bersamaan di memori pada saat halaman pertama kali dibuka, sehingga tidak efisien untuk daftar data yang panjang.",Benar,Salah,,,,B,1,,,,,,,,
+29,BENAR_SALAH,"[Database MySQL] Dalam perintah SQL pada MySQL, fungsi agregasi `COUNT(nama_kolom)` akan menghitung seluruh baris termasuk baris yang memiliki nilai `NULL` pada `nama_kolom` tersebut.",Benar,Salah,,,,B,1,,,,,,,,
+30,BENAR_SALAH,"[Database MySQL] Dalam mekanisme transaksi (Transaction) di MySQL menggunakan storage engine InnoDB, perintah `ROLLBACK` digunakan untuk membatalkan seluruh perubahan data yang dilakukan sejak perintah `START TRANSACTION` dijalankan apabila terjadi kesalahan di tengah proses.",Benar,Salah,,,,A,1,,,,,,,,
+31,MENJODOHKAN,"[Web PHP Native] Jodohkan fungsi manipulasi array dan string pada PHP Native berikut dengan kegunaannya yang tepat!","explode(',', $teks)","implode('-', $array)","array_push($arr, $item)",isset($var),session_unset(),"A:3,B:1,C:5,D:2,E:4",2,"Menggabungkan elemen-elemen array menjadi satu string dengan pemisah tertentu","Memeriksa apakah suatu variabel sudah dideklarasikan dan tidak bernilai NULL","Memecah sebuah string menjadi elemen-elemen array berdasarkan karakter pemisah","Menghapus seluruh variabel yang tersimpan di dalam sesi ($_SESSION) aktif","Menambahkan satu atau lebih elemen baru ke bagian akhir sebuah array","Mengubah seluruh huruf kapital pada string menjadi huruf kecil","Menghapus berkas fisik dari direktori penyimpanan server",
+32,MENJODOHKAN,"[Web PHP Native] Jodohkan variabel superglobal pada PHP Native berikut dengan informasi yang disimpannya!",$_GET,$_POST,$_FILES,$_SESSION,$_SERVER,"A:2,B:4,C:1,D:5,E:3",2,"Menyimpan metadata berkas yang diunggah melalui form multipart/form-data","Menampung parameter data yang dikirimkan melalui query string pada URL","Menyimpan informasi header, jalur skrip, metode request, dan lingkungan server web","Menampung data formulir HTML yang dikirimkan melalui badan permintaan HTTP POST","Menyimpan data lintas halaman milik pengguna di sisi server selama sesi berlangsung","Menyimpan konfigurasi versi PHP yang terpasang di sistem operasi","Menampung daftar seluruh tabel yang ada pada server web",
+33,MENJODOHKAN,"[Mobile Flutter] Jodohkan widget dasar Flutter berikut dengan peran utamanya dalam membangun antarmuka pengguna (UI)!",Scaffold,Stack,Padding,GestureDetector,SafeArea,"A:4,B:1,C:5,D:2,E:3",2,"Menumpuk beberapa widget secara berlapis (overlapping) di atas satu sama lain","Mendeteksi interaksi sentuhan pengguna seperti ketukan (onTap) atau geseran pada widget","Memberi jarak aman otomatis agar konten tidak tertutup notch, status bar, atau navigation bar","Menyediakan kerangka dasar halaman Material Design seperti AppBar, Body, dan FloatingActionButton","Memberikan ruang jarak (inset) di bagian dalam di sekeliling satu widget anak","Menjalankan perintah query SQL secara langsung ke mesin database lokal","Mengatur animasi transisi warna latar belakang aplikasi secara otomatis",
+34,MENJODOHKAN,"[Mobile Flutter] Jodohkan sintaks dan konsep bahasa pemrograman Dart berikut dengan fungsinya!",final,const,late,"?? (Null-coalescing)","Arrow syntax (=>)","A:2,B:5,C:1,D:4,E:3",2,"Menandakan variabel non-nullable yang inisialisasi nilainya ditunda sebelum diakses","Mendeklarasikan variabel yang nilainya hanya dapat diisi satu kali saat runtime","Penulisan singkat untuk fungsi atau method yang hanya berisi satu ekspresi tunggal","Memberikan nilai cadangan (default) apabila ekspresi di sebelah kirinya bernilai null","Mendeklarasikan konstanta yang nilainya sudah harus diketahui sejak waktu kompilasi (compile-time)","Menghapus objek widget dari memori perangkat secara paksa","Mengubah tipe data bilangan bulat menjadi daftar array",
+35,MENJODOHKAN,"[Database MySQL] Jodohkan perintah/klausa SQL pada MySQL berikut dengan kategori serta fungsinya!","CREATE TABLE","UPDATE ... SET","GRANT SELECT ON","INNER JOIN","GROUP BY","A:3,B:1,C:5,D:2,E:4",2,"Perintah DML untuk memodifikasi nilai kolom pada baris data yang sudah ada","Menggabungkan dua tabel dan hanya menampilkan baris yang memiliki kecocokan di keduanya","Perintah DDL untuk mendefinisikan struktur tabel baru beserta kolom dan tipe datanya","Mengelompokkan baris dengan nilai kolom yang sama untuk dihitung dengan fungsi agregat","Perintah DCL untuk memberikan hak akses membaca data kepada pengguna database tertentu","Perintah TCL untuk menyimpan perubahan transaksi secara permanen ke disk","Menghapus seluruh hak akses administrator sistem operasi",

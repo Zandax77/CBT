@@ -232,7 +232,7 @@
                     📑
                 </div>
                 <div class="apple-stat-value">{{ $examCount }}</div>
-                <div class="apple-stat-label">Total Ujian Dibuat</div>
+                <div class="apple-stat-label">{{ ($isGuru ?? false) ? 'Ujian Saya' : 'Total Ujian Dibuat' }}</div>
             </div>
         </div>
         <div class="col-md-4">
@@ -241,7 +241,7 @@
                     👥
                 </div>
                 <div class="apple-stat-value">{{ $userCount }}</div>
-                <div class="apple-stat-label">Total Akun Terdaftar</div>
+                <div class="apple-stat-label">{{ ($isGuru ?? false) ? 'Total Siswa Terdaftar' : 'Total Akun Terdaftar' }}</div>
             </div>
         </div>
         <div class="col-md-4">
@@ -250,7 +250,7 @@
                     🎯
                 </div>
                 <div class="apple-stat-value">{{ $attemptCount }}</div>
-                <div class="apple-stat-label">Sesi Ujian Selesai</div>
+                <div class="apple-stat-label">{{ ($isGuru ?? false) ? 'Sesi Selesai (Ujian Saya)' : 'Sesi Ujian Selesai' }}</div>
             </div>
         </div>
     </div>
@@ -269,9 +269,12 @@
             <a class="btn btn-secondary" href="{{ route('questions.template') }}">
                 <span>📥</span> Unduh Template Soal Excel
             </a>
-            @if(auth()->user()->role === 'admin')
+            @if(auth()->user()->role === 'admin' || auth()->user()->role === 'guru')
                 <a class="btn btn-secondary" href="{{ route('results.admin') }}">
-                    <span>📋</span> Rilis Nilai &amp; Hasil
+                    <span>📋</span> Hasil &amp; Rilis Nilai
+                </a>
+                <a class="btn btn-secondary" href="{{ route('admin.grades.index') }}">
+                    <span>📈</span> Rekap Nilai
                 </a>
             @endif
         </div>
@@ -334,8 +337,8 @@
     {{-- Daftar Ujian Terbaru --}}
     <div class="card p-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="fw-bold mb-0">Ujian Terbaru</h5>
-            <a href="{{ route('exams.index') }}" class="btn btn-sm btn-secondary">Semua Ujian →</a>
+            <h5 class="fw-bold mb-0">{{ ($isGuru ?? false) ? 'Ujian Saya Terbaru' : 'Ujian Terbaru' }}</h5>
+            <a href="{{ route('exams.index') }}" class="btn btn-sm btn-secondary">{{ ($isGuru ?? false) ? 'Semua Ujian Saya →' : 'Semua Ujian →' }}</a>
         </div>
         <div class="table-responsive">
             <table class="table mb-0">

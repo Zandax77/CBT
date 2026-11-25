@@ -12,6 +12,7 @@ class QuestionImportController extends Controller
 {
     public function form(Exam $exam)
     {
+        abort_unless($exam->created_by == auth()->id() || auth()->user()->role === 'admin', 403, 'Anda tidak punya akses ke ujian ini.');
         return view('questions.import', compact('exam'));
     }
 
@@ -33,32 +34,52 @@ class QuestionImportController extends Controller
 
         $sh->fromArray([$headers], null, 'A1');
 
-        // Contoh PG
+        // Contoh 1: PG (Pilihan Ganda Biasa)
         $sh->fromArray([[
-            1, 'PG', 'Contoh: 2 + 2 = ?',
-            '3','4','5','6','',
+            1, 'PG', 'Tujuan utama dilakukannya normalisasi pada basis data adalah ...',
+            'Menambah jumlah data pada tabel',
+            'Mengurangi redundansi dan anomali data',
+            'Memperbesar ukuran penyimpanan',
+            'Menghapus seluruh primary key',
+            'Mempercepat koneksi jaringan',
             'B', 1,
             '','','','','','','','',
         ]], null, 'A2');
 
-        // Contoh BENAR_SALAH
+        // Contoh 2: PG_MULTI / Pilihan Ganda Kompleks (Bisa lebih dari 1 jawaban benar)
         $sh->fromArray([[
-            2, 'BENAR_SALAH', 'Laravel adalah framework PHP.',
-            'Benar','Salah','','','',
-            'A', 1,
+            2, 'PG_MULTI', 'Pilih semua pernyataan yang benar tentang primary key!',
+            'Nilainya harus unik',
+            'Boleh bernilai NULL',
+            'Tidak boleh bernilai NULL',
+            'Boleh bernilai duplikat',
+            'Mengidentifikasi setiap baris secara unik',
+            'A,C,E', 2,
             '','','','','','','','',
         ]], null, 'A3');
 
-        // Contoh MENJODOHKAN
+        // Contoh 3: BENAR_SALAH
+        $sh->fromArray([[
+            3, 'BENAR_SALAH', 'Tabel yang telah memenuhi 3NF pasti telah memenuhi 2NF dan 1NF.',
+            'Benar','Salah','','','',
+            'A', 1,
+            '','','','','','','','',
+        ]], null, 'A4');
+
+        // Contoh 4: MENJODOHKAN
         // opsi_a..opsi_e = kolom kiri (premise A–E)
         // pasangan_1..pasangan_N = kolom kanan (jawaban yang diacak saat tampil)
-        // kunci_jawaban = urutan jawaban benar: "A:1,B:3,C:2" (premise A cocok pasangan_1, dll)
+        // kunci_jawaban = urutan jawaban benar: "A:2,B:3,C:1" (premise:nomor_pasangan)
         $sh->fromArray([[
-            3, 'MENJODOHKAN', 'Cocokkan ibukota negara berikut!',
-            'Indonesia','Malaysia','Thailand','Vietnam','',
-            'A:1,B:2,C:3,D:4', 1,
-            'Jakarta','Kuala Lumpur','Bangkok','Hanoi','','','','',
-        ]], null, 'A4');
+            4, 'MENJODOHKAN', 'Jodohkan jenis anomali berikut dengan penjelasannya!',
+            'Anomali penyisipan','Anomali pembaruan','Anomali penghapusan','','',
+            'A:2,B:3,C:1', 2,
+            'Data lain ikut hilang saat sebuah baris dihapus',
+            'Data baru tidak dapat dimasukkan tanpa data lain',
+            'Perubahan harus dilakukan pada banyak baris sekaligus',
+            'Data tersimpan dalam bentuk terenkripsi',
+            '','','','',
+        ]], null, 'A5');
 
         // Style header
         foreach (range('A', 'R') as $c) {
@@ -71,9 +92,10 @@ class QuestionImportController extends Controller
         $sh2->setTitle('Panduan');
         $sh2->fromArray([
             ['Tipe Soal', 'Keterangan'],
-            ['PG', 'Pilihan ganda. opsi_a–opsi_e untuk pilihan, kunci_jawaban = A/B/C/D/E.'],
-            ['BENAR_SALAH', 'opsi_a=Benar, opsi_b=Salah. kunci_jawaban = A (benar) atau B (salah).'],
-            ['MENJODOHKAN', 'opsi_a–opsi_e = kolom kiri (premise). pasangan_1–pasangan_8 = kolom kanan. kunci_jawaban = A:1,B:2,C:3 (premise:no.pasangan).'],
+            ['PG', 'Pilihan ganda biasa (1 jawaban benar). opsi_a–opsi_e untuk opsi pilihan, kunci_jawaban = A / B / C / D / E.'],
+            ['PG_MULTI', 'Pilihan ganda kompleks (dapat memilih lebih dari 1 jawaban benar). opsi_a–opsi_e untuk pilihan, kunci_jawaban = huruf jawaban dipisahkan koma, contoh: A,C,E (atau alias PG_KOMPLEKS).'],
+            ['BENAR_SALAH', 'Pernyataan benar atau salah. opsi_a=Benar, opsi_b=Salah. kunci_jawaban = A (Benar) atau B (Salah).'],
+            ['MENJODOHKAN', 'Menjodohkan dua sisi. opsi_a–opsi_e = kolom kiri (premise A-E). pasangan_1–pasangan_8 = kolom kanan (pilihan pasangan). kunci_jawaban = format premise:no_pasangan, contoh: A:2,B:3,C:1.'],
         ], null, 'A1');
         $sh2->getStyle('A1:B1')->getFont()->setBold(true);
         foreach (['A', 'B'] as $c) {
@@ -93,7 +115,7 @@ class QuestionImportController extends Controller
 
     public function import(Request $r, Exam $exam)
     {
-        abort_unless($exam->created_by === $r->user()->id || $r->user()->role === 'admin', 403);
+        abort_unless($exam->created_by == $r->user()->id || $r->user()->role === 'admin', 403, 'Anda tidak punya akses ke ujian ini.');
         $r->validate([
             'file' => 'required|file|mimes:xlsx|max:5120',
             'mode' => 'nullable|in:append,replace',
@@ -147,6 +169,10 @@ class QuestionImportController extends Controller
             if (implode('', $v) === '') continue;
 
             $type = strtoupper($v['tipe_soal']);
+            // Alias: treat legacy PG_KOMPLEKS as PG_MULTI
+            if ($type === 'PG_KOMPLEKS') {
+                $type = 'PG_MULTI';
+            }
             $key  = $v['kunci_jawaban'];
             $opts = [
                 'A' => $v['opsi_a'],
@@ -156,8 +182,8 @@ class QuestionImportController extends Controller
                 'E' => $v['opsi_e'],
             ];
 
-            if (!in_array($type, ['PG', 'BENAR_SALAH', 'MENJODOHKAN'], true)) {
-                $errors[] = "Baris $line: tipe_soal harus PG, BENAR_SALAH, atau MENJODOHKAN.";
+            if (!in_array($type, ['PG', 'PG_MULTI', 'BENAR_SALAH', 'MENJODOHKAN'], true)) {
+                $errors[] = "Baris $line: tipe_soal harus PG, PG_MULTI (atau PG_KOMPLEKS), BENAR_SALAH, atau MENJODOHKAN.";
             }
             if ($v['pertanyaan'] === '') {
                 $errors[] = "Baris $line: pertanyaan kosong.";
@@ -166,15 +192,27 @@ class QuestionImportController extends Controller
                 $errors[] = "Baris $line: bobot harus angka lebih dari 0.";
             }
 
-            if ($type === 'PG') {
+            if ($type === 'PG' || $type === 'PG_MULTI') {
+                // Validate required options A & B
                 if ($opts['A'] === '' || $opts['B'] === '') {
-                    $errors[] = "Baris $line: PG wajib memiliki opsi A dan B.";
+                    $errors[] = "Baris $line: PG/PG_MULTI wajib memiliki opsi A dan B.";
                 }
-                $keyUp = strtoupper($key);
-                if (!in_array($keyUp, ['A', 'B', 'C', 'D', 'E'], true) || ($opts[$keyUp] ?? '') === '') {
-                    $errors[] = "Baris $line: kunci PG tidak valid atau opsi kunci kosong.";
+                // Normalize answer key(s)
+                $keys = array_map('trim', explode(',', $key));
+                $keys = array_filter($keys, fn($k) => $k !== '');
+                $upperKeys = array_map('strtoupper', $keys);
+                // Each key must be a valid option and the option must have a value
+                foreach ($upperKeys as $k) {
+                    if (!in_array($k, ['A','B','C','D','E'], true) || ($opts[$k] ?? '') === '') {
+                        $errors[] = "Baris $line: kunci PG/PG_MULTI '$k' tidak valid atau opsi kosong.";
+                    }
                 }
-                $key = $keyUp;
+                // Store as array for PG_MULTI, otherwise as comma‑separated string
+                if ($type === 'PG_MULTI') {
+                    $key = $upperKeys; // array – will be JSON‑encoded by model casts
+                } else {
+                    $key = implode(',', $upperKeys);
+                }
             }
 
             if ($type === 'BENAR_SALAH') {
@@ -223,7 +261,7 @@ class QuestionImportController extends Controller
                 $opts = $premises;   // hanya premise yang diisi
             }
 
-            if (!in_array($type, ['PG', 'BENAR_SALAH', 'MENJODOHKAN'], true)
+            if (!in_array($type, ['PG', 'PG_MULTI', 'BENAR_SALAH', 'MENJODOHKAN'], true)
                 || $v['pertanyaan'] === ''
                 || !is_numeric($v['bobot'])
                 || (float) $v['bobot'] <= 0) {

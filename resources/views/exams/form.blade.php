@@ -186,6 +186,19 @@
             </div>
 
             <div class="col-12">
+                <div class="glass-well p-3 mb-2 d-flex align-items-center">
+                    <div class="form-check m-0">
+                        <input class="form-check-input" type="checkbox" name="randomize_by_type" value="1" id="randomize_by_type"
+                            @checked(old('randomize_by_type', $exam->randomize_by_type))>
+                        <label class="form-check-label fw-semibold ms-2" for="randomize_by_type" style="cursor: pointer;">
+                            🔀 Acak Urutan Soal Menurut Jenis untuk Setiap Siswa
+                            <span class="d-block small text-secondary fw-normal mt-1">
+                                Setiap siswa mendapatkan urutan nomor soal yang teracak berbeda, namun tetap tersusun rapi per kelompok jenis (Pilihan Ganda terlebih dahulu, lalu Benar/Salah, kemudian Menjodohkan).
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
                 <div class="glass-well p-3 d-flex align-items-center">
                     <div class="form-check m-0">
                         <input class="form-check-input" type="checkbox" name="is_published" value="1" id="published"

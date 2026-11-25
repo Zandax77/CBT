@@ -2,6 +2,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Exam;
+use App\Models\User;
+use App\Models\Attempt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +14,13 @@ class ExamController extends Controller
     /** Scope query berdasarkan peran: guru hanya lihat ujiannya sendiri. */
     private function scopedQuery()
     {
-        $q = Exam::with(['creator', 'questions']);
+        $q = Exam::with(['creator', 'questions'])
+            ->withCount([
+                'attempts',
+                'attempts as in_progress_count' => fn($q) => $q->whereNotNull('started_at')->whereNull('submitted_at'),
+                'attempts as submitted_count'   => fn($q) => $q->whereNotNull('submitted_at'),
+                'attempts as violations_count'  => fn($q) => $q->where('violations', '>', 0),
+            ]);
         if (auth()->user()->role === 'guru') {
             $q->where('created_by', auth()->id());
         }
@@ -25,6 +33,13 @@ class ExamController extends Controller
         $this->scopedQuery()->get()->each->rotateTokenIfNeeded();
 
         $exams = $this->scopedQuery()->latest()->paginate(15);
+
+        // Ambil data siswa satu kali untuk menghitung target eligible tiap ujian
+        $allStudents = User::where('role', 'siswa')->get();
+        foreach ($exams as $exam) {
+            $exam->eligible_count = $exam->countEligibleStudents($allStudents);
+        }
+
         return view('exams.index', compact('exams'));
     }
 
@@ -39,6 +54,7 @@ class ExamController extends Controller
         $d['created_by']            = $r->user()->id;
         $d['token']                 = !empty($d['token']) ? Str::upper($d['token']) : Str::upper(Str::random(6));
         $d['token_last_rotated_at'] = now();
+        $d['randomize_by_type']     = $r->boolean('randomize_by_type');
 
         $startTime = Carbon::parse($d['starts_at']);
         if (!empty($d['token_valid_minutes'])) {
@@ -85,6 +101,7 @@ class ExamController extends Controller
         }
 
         $d['is_published'] = $r->boolean('is_published');
+        $d['randomize_by_type'] = $r->boolean('randomize_by_type');
         $exam->update($d);
         return redirect()->route('exams.index')->with('success', 'Pengaturan ujian berhasil diperbarui.');
     }
@@ -124,7 +141,7 @@ class ExamController extends Controller
         DB::transaction(function () use ($exams, $user, &$deletedCount) {
             foreach ($exams as $exam) {
                 // Cek izin per ujian
-                if ($user->role !== 'admin' && $exam->created_by !== $user->id) {
+                if ($user->role !== 'admin' && $exam->created_by != $user->id) {
                     continue;
                 }
 
@@ -176,6 +193,133 @@ class ExamController extends Controller
     // ── Helpers ────────────────────────────────────────────────────────────────
 
     /**
+     * Tampilkan data dan status seluruh peserta pada ujian tertentu.
+     */
+    public function participants(Request $request, Exam $exam)
+    {
+        $this->authorizeExam($exam);
+
+        $allStudents = User::where('role', 'siswa')
+            ->orderBy('class_name')
+            ->orderBy('name')
+            ->get();
+
+        $eligibleStudents = $allStudents->filter(fn($s) => $exam->matchesStudent($s));
+        $studentMap = $eligibleStudents->keyBy('id');
+
+        $attempts = Attempt::with('user')
+            ->where('exam_id', $exam->id)
+            ->get()
+            ->keyBy('user_id');
+
+        // Sertakan juga siswa yang mengerjakan meskipun di luar target awal
+        foreach ($attempts as $a) {
+            if ($a->user && !$studentMap->has($a->user_id)) {
+                $studentMap->put($a->user_id, $a->user);
+            }
+        }
+
+        $participants = $studentMap->values()->map(function ($student) use ($attempts, $exam) {
+            /** @var Attempt|null $attempt */
+            $attempt = $attempts->get($student->id);
+
+            if (!$attempt || !$attempt->started_at) {
+                $status = 'belum_mulai';
+                $statusLabel = 'Belum Mulai';
+                $duration = null;
+            } elseif ($attempt->submitted_at) {
+                if ($attempt->force_submitted) {
+                    $status = 'force_submitted';
+                    $statusLabel = 'Dikumpulkan Paksa';
+                } else {
+                    $status = 'selesai';
+                    $statusLabel = 'Selesai';
+                }
+                $duration = $attempt->started_at->diffInMinutes($attempt->submitted_at) . ' menit';
+            } else {
+                $status = 'mengerjakan';
+                $statusLabel = 'Sedang Mengerjakan';
+                $duration = $attempt->started_at->diffInMinutes(now()) . ' menit berjalan';
+            }
+
+            return [
+                'id'              => $student->id,
+                'attempt_id'      => $attempt?->id,
+                'name'            => $student->name,
+                'student_number'  => $student->student_number ?: '—',
+                'class_name'      => $student->class_name ?: '—',
+                'status'          => $status,
+                'status_label'    => $statusLabel,
+                'started_at'      => $attempt?->started_at?->format('d/m/Y H:i:s'),
+                'started_time'    => $attempt?->started_at?->format('H:i'),
+                'submitted_at'    => $attempt?->submitted_at?->format('d/m/Y H:i:s'),
+                'submitted_time'  => $attempt?->submitted_at?->format('H:i'),
+                'duration'        => $duration,
+                'score'           => $attempt?->submitted_at ? (float) $attempt->score : null,
+                'violations'      => $attempt ? (int) $attempt->violations : 0,
+                'violation_log'   => $attempt?->violation_log ?: [],
+                'force_submitted' => (bool) ($attempt?->force_submitted),
+            ];
+        });
+
+        // Filter jika ada parameter query
+        if ($request->filled('status')) {
+            $participants = $participants->filter(fn($p) => $p['status'] === $request->status);
+        }
+
+        if ($request->filled('kelas')) {
+            $participants = $participants->filter(fn($p) => $p['class_name'] === $request->kelas);
+        }
+
+        if ($request->filled('q')) {
+            $kw = strtolower($request->q);
+            $participants = $participants->filter(function ($p) use ($kw) {
+                return str_contains(strtolower($p['name']), $kw)
+                    || str_contains(strtolower($p['student_number']), $kw)
+                    || str_contains(strtolower($p['class_name']), $kw);
+            });
+        }
+
+        $totalEligible    = $studentMap->count();
+        $startedCount     = $attempts->whereNotNull('started_at')->count();
+        $inProgressCount  = $attempts->whereNotNull('started_at')->whereNull('submitted_at')->count();
+        $submittedCount   = $attempts->whereNotNull('submitted_at')->count();
+        $unstartedCount   = max(0, $totalEligible - $startedCount);
+        $violationsCount  = (int) $attempts->sum('violations');
+
+        $stats = [
+            'total_eligible'    => $totalEligible,
+            'started_count'     => $startedCount,
+            'in_progress_count' => $inProgressCount,
+            'submitted_count'   => $submittedCount,
+            'unstarted_count'   => $unstartedCount,
+            'violations_count'  => $violationsCount,
+        ];
+
+        $classes = $studentMap->pluck('class_name')->filter()->unique()->sort()->values();
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'exam' => [
+                    'id'               => $exam->id,
+                    'title'            => $exam->title,
+                    'subject'          => $exam->subject,
+                    'target_badge'     => $exam->getTargetBadgeLabel(),
+                    'token'            => $exam->token,
+                    'duration_minutes' => $exam->duration_minutes,
+                    'is_active'        => $exam->isActive(),
+                    'status_label'     => $exam->isActive() ? 'Aktif' : ($exam->ends_at < now() ? 'Selesai' : 'Terjadwal'),
+                ],
+                'stats'        => $stats,
+                'classes'      => $classes,
+                'participants' => $participants->values(),
+            ]);
+        }
+
+        return view('exams.participants', compact('exam', 'participants', 'stats', 'classes'));
+    }
+
+    /**
      * Otorisasi akses ke ujian.
      * Default: hanya pemilik atau admin.
      */
@@ -206,6 +350,7 @@ class ExamController extends Controller
             'token_valid_minutes'  => 'nullable|integer|min:1|max:1440',
             'token_rotate_minutes' => 'nullable|integer|min:1|max:120',
             'is_published'         => 'nullable|boolean',
+            'randomize_by_type'    => 'nullable|boolean',
         ]);
     }
 }

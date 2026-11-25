@@ -46,10 +46,27 @@ class DashboardController extends Controller
             ]);
         }
 
-        // Tampilan Admin / Guru
+        if ($role === 'guru') {
+            $user = $r->user();
+            $myExams = Exam::where('created_by', $user->id);
+            $myExamIds = (clone $myExams)->pluck('id');
+
+            return view('dashboard', [
+                'student'      => false,
+                'isKepsek'     => false,
+                'isGuru'       => true,
+                'exams'        => (clone $myExams)->latest()->take(10)->get(),
+                'examCount'    => (clone $myExams)->count(),
+                'userCount'    => User::where('role', 'siswa')->count(),
+                'attemptCount' => Attempt::whereIn('exam_id', $myExamIds)->whereNotNull('submitted_at')->count(),
+            ]);
+        }
+
+        // Tampilan Admin
         return view('dashboard', [
             'student'      => false,
             'isKepsek'     => false,
+            'isGuru'       => false,
             'exams'        => Exam::latest()->take(10)->get(),
             'examCount'    => Exam::count(),
             'userCount'    => User::count(),

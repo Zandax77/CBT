@@ -9,7 +9,7 @@ class Exam extends Model {
         'title', 'subject', 'target_type', 'target_level', 'target_major', 'class_name',
         'starts_at', 'ends_at', 'duration_minutes', 'token', 'token_valid_minutes',
         'token_expires_at', 'is_published', 'created_by', 'results_released',
-        'token_rotate_minutes', 'token_last_rotated_at',
+        'token_rotate_minutes', 'token_last_rotated_at', 'randomize_by_type',
     ];
 
     protected function casts(): array {
@@ -18,6 +18,7 @@ class Exam extends Model {
             'ends_at'               => 'datetime',
             'is_published'          => 'boolean',
             'results_released'      => 'boolean',
+            'randomize_by_type'     => 'boolean',
             'token_last_rotated_at' => 'datetime',
             'token_expires_at'      => 'datetime',
             'token_valid_minutes'   => 'integer',
@@ -27,6 +28,14 @@ class Exam extends Model {
     public function questions() { return $this->hasMany(Question::class)->orderBy('position'); }
     public function attempts()  { return $this->hasMany(Attempt::class); }
     public function creator()   { return $this->belongsTo(User::class, 'created_by'); }
+
+    /**
+     * Hitung jumlah siswa yang memenuhi kriteria target ujian ini.
+     */
+    public function countEligibleStudents(?\Illuminate\Support\Collection $allStudents = null): int {
+        $students = $allStudents ?? User::where('role', 'siswa')->get();
+        return $students->filter(fn($s) => $this->matchesStudent($s))->count();
+    }
 
     /** Apakah ujian sedang aktif (dalam rentang waktu pelaksanaan). */
     public function isActive(): bool {

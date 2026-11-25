@@ -144,7 +144,7 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
     top: 12px;
     z-index: 1020;
     margin: 12px auto 22px auto;
-    max-width: 1280px;
+    max-width: 1380px;
     padding: 0 16px;
     width: 100%;
 }
@@ -252,6 +252,51 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
     font-weight: 600;
     border: 1px solid var(--apple-blue-border) !important;
     box-shadow: none !important;
+}
+
+/* Apple Glass Dropdown Menus */
+.apple-glass-dropdown {
+    background: rgba(255, 255, 255, 0.92) !important;
+    backdrop-filter: blur(28px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(200%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.95) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.95) !important;
+    padding: 8px !important;
+    min-width: 200px !important;
+    margin-top: 8px !important;
+    z-index: 1050;
+}
+
+.apple-glass-dropdown .dropdown-item {
+    border-radius: 12px !important;
+    padding: 8px 14px !important;
+    font-size: 0.84rem !important;
+    font-weight: 550 !important;
+    color: var(--apple-text-primary) !important;
+    transition: all 0.15s ease !important;
+}
+
+.apple-glass-dropdown .dropdown-item:hover {
+    background: var(--apple-blue-subtle) !important;
+    color: var(--apple-blue) !important;
+    transform: translateX(2px);
+}
+
+.apple-glass-dropdown .dropdown-item.active {
+    background: var(--apple-blue) !important;
+    color: #ffffff !important;
+}
+
+.apple-nav-link.dropdown-toggle::after {
+    margin-left: 5px;
+    vertical-align: 0.15em;
+    font-size: 0.72rem;
+    transition: transform 0.2s ease;
+}
+
+.apple-nav-link.dropdown-toggle.show::after {
+    transform: rotate(180deg);
 }
 
 /* User Profile Glass Capsule */
@@ -790,7 +835,13 @@ textarea.form-control {
 /* ── Pagination (Apple Glass Pill) ── */
 .pagination {
     gap: 6px;
-    margin-top: 1rem;
+    margin: 0;
+    align-items: center;
+}
+
+.pagination svg {
+    width: 14px;
+    height: 14px;
 }
 
 .page-item .page-link {
@@ -804,6 +855,11 @@ textarea.form-control {
     font-size: 0.85rem;
     padding: 6px 12px;
     transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    text-align: center;
 }
 
 .page-item .page-link:hover {
@@ -817,6 +873,14 @@ textarea.form-control {
     border-color: var(--apple-blue) !important;
     color: #fff !important;
     box-shadow: 0 4px 12px rgba(0, 113, 227, 0.35) !important;
+}
+
+.page-item.disabled .page-link {
+    background: rgba(255, 255, 255, 0.35) !important;
+    color: rgba(0, 0, 0, 0.25) !important;
+    border-color: rgba(0, 0, 0, 0.05) !important;
+    cursor: not-allowed;
+    box-shadow: none !important;
 }
 
 /* ── Apple Stats Card Widget ── */

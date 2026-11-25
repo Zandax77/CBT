@@ -13,7 +13,15 @@ class GradeExportController extends Controller
 {
     public function index(Request $request)
     {
-        $exams = Exam::orderBy('title')->get(['id', 'title']);
+        $user = $request->user();
+        $isGuru = $user->role === 'guru';
+
+        $examQuery = Exam::orderBy('title');
+        if ($isGuru) {
+            $examQuery->where('created_by', $user->id);
+        }
+        $exams = $examQuery->get(['id', 'title']);
+
         $classes = User::where('role', 'siswa')
             ->whereNotNull('class_name')
             ->where('class_name', '!=', '')
@@ -24,7 +32,15 @@ class GradeExportController extends Controller
         $query = Attempt::with(['exam', 'user'])
             ->whereNotNull('submitted_at');
 
+        if ($isGuru) {
+            $query->whereHas('exam', fn($q) => $q->where('created_by', $user->id));
+        }
+
         if ($request->filled('exam_id')) {
+            if ($isGuru) {
+                $examBelongsToGuru = Exam::where('id', $request->exam_id)->where('created_by', $user->id)->exists();
+                abort_unless($examBelongsToGuru, 403, 'Anda tidak memiliki akses ke rekap nilai ujian ini.');
+            }
             $query->where('exam_id', $request->exam_id);
         }
 
@@ -48,10 +64,21 @@ class GradeExportController extends Controller
             'kelas' => ['nullable', 'string', 'max:100'],
         ]);
 
+        $user = $request->user();
+        $isGuru = $user->role === 'guru';
+
         $query = Attempt::with(['exam', 'user'])
             ->whereNotNull('submitted_at');
 
+        if ($isGuru) {
+            $query->whereHas('exam', fn($q) => $q->where('created_by', $user->id));
+        }
+
         if ($request->filled('exam_id')) {
+            if ($isGuru) {
+                $examBelongsToGuru = Exam::where('id', $request->exam_id)->where('created_by', $user->id)->exists();
+                abort_unless($examBelongsToGuru, 403, 'Anda tidak memiliki akses ke rekap nilai ujian ini.');
+            }
             $query->where('exam_id', $request->exam_id);
         }
 

@@ -81,12 +81,53 @@ class AttemptController extends Controller
             return redirect()->route('results.student')->with('info', 'Waktu ujian habis.');
         }
 
-        $questions = $attempt->exam->questions()
-            ->get(['id', 'exam_id', 'position', 'type', 'question_text', 'image_path', 'options', 'weight']);
+        $questions = $this->resolveAttemptQuestions($attempt);
 
         $answers = $attempt->answers->pluck('answer_value', 'question_id');
 
         return view('attempts.show', compact('attempt', 'questions', 'answers'));
+    }
+
+    /**
+     * Mengambil daftar soal untuk attempt.
+     * Jika ujian mengaktifkan pengacakan menurut jenis, hasil acak disimpan
+     * di attempt->question_order agar urutan tetap konsisten bagi siswa bersangkutan.
+     */
+    private function resolveAttemptQuestions(Attempt $attempt)
+    {
+        $exam = $attempt->exam;
+
+        if ($exam->randomize_by_type) {
+            $orderedIds = $attempt->question_order;
+            if (empty($orderedIds) || !is_array($orderedIds)) {
+                $typeOrder = ['PG', 'PG_MULTI', 'BENAR_SALAH', 'MENJODOHKAN'];
+                $allQuestions = $exam->questions()->get();
+                $grouped = $allQuestions->groupBy('type');
+                $orderedIds = [];
+                foreach ($typeOrder as $t) {
+                    if ($grouped->has($t)) {
+                        $orderedIds = array_merge($orderedIds, $grouped->get($t)->shuffle()->pluck('id')->all());
+                    }
+                }
+                foreach ($grouped as $type => $items) {
+                    if (!in_array($type, $typeOrder, true)) {
+                        $orderedIds = array_merge($orderedIds, $items->shuffle()->pluck('id')->all());
+                    }
+                }
+                $attempt->update(['question_order' => $orderedIds]);
+            }
+
+            return $exam->questions()
+                ->get(['id', 'exam_id', 'position', 'type', 'question_text', 'image_path', 'options', 'weight'])
+                ->sortBy(function ($q) use ($orderedIds) {
+                    $idx = array_search($q->id, $orderedIds);
+                    return $idx === false ? $q->position : $idx;
+                })
+                ->values();
+        }
+
+        return $exam->questions()
+            ->get(['id', 'exam_id', 'position', 'type', 'question_text', 'image_path', 'options', 'weight']);
     }
 
     private function deadline(Attempt $a): Carbon
@@ -107,7 +148,7 @@ class AttemptController extends Controller
 
         $d = $r->validate([
             'question_id' => 'required|integer',
-            'answer'      => 'required|string|max:1000',
+            'answer'      => 'nullable', // Accept string or array for PG/PG_MULTI
         ]);
 
         $q = $attempt->exam->questions()->findOrFail($d['question_id']);
@@ -131,8 +172,18 @@ class AttemptController extends Controller
         } else {
             // PG / BENAR_SALAH
             $allowed = array_keys(array_diff_key($q->options, ['__pairs' => '']));
-            abort_unless(in_array(strtoupper($d['answer']), $allowed, true), 422);
-            $answerValue = strtoupper($d['answer']);
+            // Normalize answer to array of upper‑case options
+            $answers = is_array($d['answer']) ? $d['answer'] : explode(',', $d['answer']);
+            $answers = array_map('trim', $answers);
+            $answers = array_filter($answers); // remove empty strings
+            $answersUpper = array_map('strtoupper', $answers);
+            // Validate each selected answer
+            foreach ($answersUpper as $ans) {
+                abort_unless(in_array($ans, $allowed, true), 422);
+            }
+            // Store as comma‑separated string (order‑independent)
+            sort($answersUpper);
+            $answerValue = implode(',', $answersUpper);
         }
 
         Answer::updateOrCreate(
@@ -228,9 +279,34 @@ class AttemptController extends Controller
                         $ans->update(['is_correct' => $correct, 'earned_score' => $earnedScore]);
                         $earned += $earnedScore;
                     }
+                } elseif ($q->type === 'PG_MULTI') {
+                    // Pilihan Ganda Kompleks: kunci jawaban berupa array atau koma-dipisah
+                    $correct = false;
+                    if ($ans && !empty($ans->answer_value)) {
+                        $rawKey = $q->answer_key;
+                        $keyArr = is_array($rawKey) ? $rawKey : explode(',', (string) $rawKey);
+                        $keyArr = array_values(array_filter(array_map('trim', array_map('strtoupper', $keyArr))));
+                        sort($keyArr);
+
+                        $ansArr = explode(',', (string) $ans->answer_value);
+                        $ansArr = array_values(array_filter(array_map('trim', array_map('strtoupper', $ansArr))));
+                        sort($ansArr);
+
+                        $correct = ($keyArr === $ansArr);
+                    }
+                    if ($ans) {
+                        $ans->update([
+                            'is_correct'   => $correct,
+                            'earned_score' => $correct ? $q->weight : 0,
+                        ]);
+                    }
+                    if ($correct) {
+                        $earned += (float) $q->weight;
+                    }
                 } else {
                     // PG & BENAR_SALAH: all-or-nothing
-                    $correct = $ans && strtoupper((string) $ans->answer_value) === strtoupper($q->answer_key);
+                    $rawKey = is_array($q->answer_key) ? implode(',', $q->answer_key) : (string)$q->answer_key;
+                    $correct = $ans && strtoupper(trim((string) $ans->answer_value)) === strtoupper(trim($rawKey));
                     if ($ans) {
                         $ans->update([
                             'is_correct'   => $correct,

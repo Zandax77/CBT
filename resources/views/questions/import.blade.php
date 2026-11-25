@@ -84,8 +84,13 @@
                 <tbody>
                     <tr>
                         <td><code>PG</code></td>
-                        <td>Pilihan ganda biasa. Isi kolom opsi_a sampai opsi_e (minimal A &amp; B).</td>
+                        <td>Pilihan ganda biasa (1 jawaban benar). Isi kolom opsi_a sampai opsi_e (minimal A &amp; B).</td>
                         <td>A / B / C / D / E</td>
+                    </tr>
+                    <tr>
+                        <td><code>PG_MULTI</code></td>
+                        <td>Pilihan ganda kompleks (bisa lebih dari 1 jawaban benar). Isi kolom opsi_a sampai opsi_e (minimal A &amp; B). (Mendukung alias <code>PG_KOMPLEKS</code>).</td>
+                        <td>Dipisah koma, contoh: <code>A,C,E</code></td>
                     </tr>
                     <tr>
                         <td><code>BENAR_SALAH</code></td>

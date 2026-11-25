@@ -9,7 +9,7 @@ class Question extends Model {
     ];
 
     protected function casts(): array {
-        return ['options' => 'array', 'weight' => 'decimal:2'];
+        return ['options' => 'array', 'answer_key' => 'array', 'weight' => 'decimal:2'];
     }
 
     public function exam() { return $this->belongsTo(Exam::class); }

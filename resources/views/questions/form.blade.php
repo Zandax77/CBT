@@ -22,7 +22,8 @@
         <div class="col-md-5">
             <label class="form-label" for="typeSelect">Tipe Butir Soal <span class="text-danger">*</span></label>
             <select name="type" id="typeSelect" class="form-select" required>
-                <option value="PG"          @selected(old('type', $question->type) === 'PG')>🔘 Pilihan Ganda</option>
+                <option value="PG"          @selected(old('type', $question->type) === 'PG')>🔘 Pilihan Ganda (biasa)</option>
+                <option value="PG_MULTI"    @selected(old('type', $question->type) === 'PG_MULTI')>🔘 Pilihan Ganda (kompleks)</option>
                 <option value="BENAR_SALAH" @selected(old('type', $question->type) === 'BENAR_SALAH')>⚖️ Benar / Salah</option>
                 <option value="MENJODOHKAN" @selected(old('type', $question->type) === 'MENJODOHKAN')>🔗 Menjodohkan (Matching)</option>
             </select>
@@ -67,12 +68,12 @@
         </div>
     </div>
 
-    {{-- ──────────────── PG ──────────────── --}}
+    {{-- ──────────────── PG & PG_MULTI ──────────────── --}}
     <div id="section-PG" class="type-section glass-well mt-4 p-4">
         <h6 class="fw-bold mb-3">Pilihan Jawaban (A-E)</h6>
         <div class="row g-3">
             @foreach(['A'=>'opt_a','B'=>'opt_b','C'=>'opt_c','D'=>'opt_d','E'=>'opt_e'] as $key => $field)
-            @php $optVal = old($field, ($question->exists && $question->type==='PG') ? ($question->options[$key] ?? '') : ''); @endphp
+            @php $optVal = old($field, ($question->exists && in_array($question->type, ['PG', 'PG_MULTI'])) ? ($question->options[$key] ?? '') : ''); @endphp
             <div class="col-md-6">
                 <div class="input-group">
                     <span class="input-group-text fw-bold" style="background:rgba(255,255,255,0.7); border-color:rgba(0,0,0,0.1); color:var(--apple-blue);">
@@ -88,15 +89,20 @@
         <div class="mt-4 pt-3 border-top" style="border-color:rgba(0,0,0,0.06) !important;">
             <label class="form-label fw-bold mb-2">Kunci Jawaban Benar</label>
             <div class="d-flex gap-3 flex-wrap">
+                @php
+                    $rawPgKey = $question->answer_key;
+                    $existingPgKeys = is_array($rawPgKey) ? $rawPgKey : (is_string($rawPgKey) && $rawPgKey !== '' ? explode(',', $rawPgKey) : []);
+                    $pgKeys = old('answer_pg', ($question->exists && in_array($question->type, ['PG', 'PG_MULTI'])) ? $existingPgKeys : []);
+                @endphp
                 @foreach(['A','B','C','D','E'] as $k)
-                @php $pgKey = old('answer_pg', ($question->exists && $question->type==='PG') ? $question->answer_key : 'A'); @endphp
                 <div class="form-check user-select-none">
-                    <input class="form-check-input" type="radio" name="answer_pg" value="{{ $k }}"
-                           id="pg_{{ $k }}" @checked($pgKey === $k)>
+                    <input class="form-check-input" type="checkbox" name="answer_pg[]" value="{{ $k }}"
+                           id="pg_{{ $k }}" @checked(in_array($k, (array)$pgKeys, true))>
                     <label class="form-check-label fw-bold ms-1" for="pg_{{ $k }}">{{ $k }}</label>
                 </div>
                 @endforeach
             </div>
+            <small class="text-secondary mt-1 d-block">Pilih 1 jawaban untuk PG biasa, atau lebih dari 1 untuk PG kompleks.</small>
         </div>
     </div>
 
@@ -104,7 +110,13 @@
     <div id="section-BENAR_SALAH" class="type-section glass-well mt-4 p-4">
         <h6 class="fw-bold mb-3">Kunci Jawaban Benar / Salah</h6>
         <div class="d-flex gap-4">
-            @php $bsKey = old('answer_bs', ($question->exists && $question->type==='BENAR_SALAH') ? $question->answer_key : 'A'); @endphp
+            @php
+                $rawBs = $question->answer_key;
+                if (is_array($rawBs)) {
+                    $rawBs = $rawBs[0] ?? 'A';
+                }
+                $bsKey = old('answer_bs', ($question->exists && $question->type==='BENAR_SALAH') ? $rawBs : 'A');
+            @endphp
             <div class="form-check user-select-none">
                 <input class="form-check-input" type="radio" name="answer_bs" value="A"
                        id="bs_benar" @checked($bsKey === 'A')>
@@ -166,7 +178,13 @@
 
         <div class="mt-4 pt-3 border-top" style="border-color:rgba(0,0,0,0.06) !important;">
             <label class="form-label fw-bold" for="match_key">Kunci Pasangan Jawaban</label>
-            @php $matchKey = old('match_key', ($question->exists && $question->type==='MENJODOHKAN') ? $question->answer_key : ''); @endphp
+            @php
+                $rawMatchKey = $question->answer_key;
+                if (is_array($rawMatchKey)) {
+                    $rawMatchKey = implode(',', $rawMatchKey);
+                }
+                $matchKey = old('match_key', ($question->exists && $question->type==='MENJODOHKAN') ? $rawMatchKey : '');
+            @endphp
             <input type="text" name="match_key" id="match_key" class="form-control" style="max-width:320px"
                    value="{{ $matchKey }}"
                    placeholder="Contoh: A:1,B:3,C:2">
@@ -190,7 +208,8 @@ const sections   = document.querySelectorAll('.type-section');
 
 function showSection(val) {
     sections.forEach(s => s.style.display = 'none');
-    const el = document.getElementById('section-' + val);
+    const targetId = (val === 'PG_MULTI') ? 'section-PG' : ('section-' + val);
+    const el = document.getElementById(targetId);
     if (el) el.style.display = 'block';
 }
 

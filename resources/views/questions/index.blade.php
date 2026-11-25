@@ -86,15 +86,68 @@
 </div>
 
 {{-- ── Daftar Soal ─────────────────────────────────────────────── --}}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div class="d-flex align-items-center gap-2">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
         <h5 class="fw-bold mb-0">Daftar Soal</h5>
-        <span class="badge bg-primary">{{ $questions->count() }} butir</span>
+        <span class="badge bg-primary">{{ $totalQuestions }} butir</span>
+        @if($totalQuestions > 0)
+        <span class="badge bg-secondary">Total Bobot: {{ $totalWeight }}</span>
+        @endif
     </div>
-    @if($questions->count())
-    <span class="badge bg-secondary">Total Bobot: {{ $questions->sum('weight') }}</span>
+
+    @if($totalQuestions > 0)
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        {{-- Tombol Acak Urutan Soal Menurut Jenis --}}
+        <form method="POST" action="{{ route('questions.shuffle', $exam) }}" class="m-0"
+              onsubmit="return confirm('Acak urutan soal menurut jenisnya?\n\nSoal akan diacak posisinya di bank soal namun tetap tersusun rapi per kelompok jenis:\n1. Pilihan Ganda\n2. Benar/Salah\n3. Menjodohkan\n\nNomor urut soal di bank soal akan diperbarui otomatis.\n\nYakin ingin melanjutkan?')">
+            @csrf
+            <button type="submit" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 shadow-sm fw-semibold">
+                <span>🔀</span> Acak Urutan Soal per Jenis
+            </button>
+        </form>
+
+        {{-- Dropdown per halaman --}}
+        <div class="d-flex align-items-center gap-1">
+            <label class="small text-secondary fw-semibold">Tampil:</label>
+            <div class="btn-group btn-group-sm">
+                <a href="{{ route('questions.list', array_merge(['exam' => $exam->id], request()->except('page', 'per_page'), ['per_page' => '20'])) }}"
+                   class="btn btn-sm {{ ($perPageParam == '20') ? 'btn-primary' : 'btn-outline-secondary' }}">20</a>
+                <a href="{{ route('questions.list', array_merge(['exam' => $exam->id], request()->except('page', 'per_page'), ['per_page' => '50'])) }}"
+                   class="btn btn-sm {{ ($perPageParam == '50') ? 'btn-primary' : 'btn-outline-secondary' }}">50</a>
+                <a href="{{ route('questions.list', array_merge(['exam' => $exam->id], request()->except('page', 'per_page'), ['per_page' => 'all'])) }}"
+                   class="btn btn-sm {{ ($perPageParam == 'all') ? 'btn-primary' : 'btn-outline-secondary' }}">Semua</a>
+            </div>
+        </div>
+    </div>
     @endif
 </div>
+
+{{-- Filter per jenis soal --}}
+@if($totalQuestions > 0)
+<div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+    <span class="small text-secondary fw-semibold">Filter Jenis:</span>
+    <a href="{{ route('questions.list', array_merge(['exam' => $exam->id], request()->except('page', 'type'))) }}"
+       class="badge {{ empty($typeFilter) ? 'bg-dark' : 'bg-light text-dark border' }} text-decoration-none py-2 px-3">
+        Semua ({{ $totalQuestions }})
+    </a>
+    <a href="{{ route('questions.list', array_merge(['exam' => $exam->id], request()->except('page'), ['type' => 'PG'])) }}"
+       class="badge {{ ($typeFilter === 'PG') ? 'bg-primary' : 'bg-light text-dark border' }} text-decoration-none py-2 px-3">
+        Pilihan Ganda ({{ $typeCounts['PG'] ?? 0 }})
+    </a>
+    <a href="{{ route('questions.list', array_merge(['exam' => $exam->id], request()->except('page'), ['type' => 'PG_MULTI'])) }}"
+       class="badge {{ ($typeFilter === 'PG_MULTI') ? 'bg-success' : 'bg-light text-dark border' }} text-decoration-none py-2 px-3">
+        PG Kompleks ({{ $typeCounts['PG_MULTI'] ?? 0 }})
+    </a>
+    <a href="{{ route('questions.list', array_merge(['exam' => $exam->id], request()->except('page'), ['type' => 'BENAR_SALAH'])) }}"
+       class="badge {{ ($typeFilter === 'BENAR_SALAH') ? 'bg-info' : 'bg-light text-dark border' }} text-decoration-none py-2 px-3">
+        Benar/Salah ({{ $typeCounts['BENAR_SALAH'] ?? 0 }})
+    </a>
+    <a href="{{ route('questions.list', array_merge(['exam' => $exam->id], request()->except('page'), ['type' => 'MENJODOHKAN'])) }}"
+       class="badge {{ ($typeFilter === 'MENJODOHKAN') ? 'bg-warning' : 'bg-light text-dark border' }} text-decoration-none py-2 px-3">
+        Menjodohkan ({{ $typeCounts['MENJODOHKAN'] ?? 0 }})
+    </a>
+</div>
+@endif
 
 @if($questions->isEmpty())
     <div class="card p-5 text-center text-muted">
@@ -129,6 +182,8 @@
                     <td>
                         @if($q->type === 'PG')
                             <span class="badge bg-primary">Pilihan Ganda</span>
+                        @elseif($q->type === 'PG_MULTI')
+                            <span class="badge bg-success">PG Kompleks</span>
                         @elseif($q->type === 'BENAR_SALAH')
                             <span class="badge bg-info">Benar/Salah</span>
                         @else
@@ -173,12 +228,18 @@
             <tfoot>
                 <tr>
                     <td colspan="3" class="text-end fw-bold text-secondary">Total Bobot Ujian:</td>
-                    <td class="text-center fw-bold text-primary">{{ $questions->sum('weight') }}</td>
+                    <td class="text-center fw-bold text-primary">{{ $totalWeight }}</td>
                     <td colspan="2"></td>
                 </tr>
             </tfoot>
         </table>
     </div>
+
+    @if($questions instanceof \Illuminate\Pagination\LengthAwarePaginator && $questions->hasPages())
+    <div class="mt-3 pt-3 border-top">
+        {{ $questions->links() }}
+    </div>
+    @endif
 </div>
 @endif
 

@@ -42,34 +42,56 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="apple-nav-link {{ request()->routeIs('exams.*') ? 'active' : '' }}"
+                               href="{{ route('exams.index') }}">
+                                <span>📝</span> Kelola Ujian
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="apple-nav-link {{ request()->routeIs('monitoring.*') ? 'active' : '' }}"
                                href="{{ route('monitoring.index') }}">
                                 <span>📡</span> Monitoring
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="apple-nav-link {{ request()->routeIs('admin.students.*') ? 'active' : '' }}"
-                               href="{{ route('admin.students.index') }}">
-                                <span>👥</span> Siswa
+                        <li class="nav-item dropdown">
+                            <a class="apple-nav-link dropdown-toggle {{ request()->routeIs('admin.students.*', 'admin.teachers.*') ? 'active' : '' }}"
+                               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span>👥</span> Pengguna
                             </a>
+                            <ul class="dropdown-menu apple-glass-dropdown shadow-lg">
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center gap-2 {{ request()->routeIs('admin.students.*') ? 'active' : '' }}"
+                                       href="{{ route('admin.students.index') }}">
+                                        <span>👥</span> Data Siswa
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center gap-2 {{ request()->routeIs('admin.teachers.*') ? 'active' : '' }}"
+                                       href="{{ route('admin.teachers.index') }}">
+                                        <span>👨‍🏫</span> Data Guru
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
-                        <li class="nav-item">
-                            <a class="apple-nav-link {{ request()->routeIs('admin.teachers.*') ? 'active' : '' }}"
-                               href="{{ route('admin.teachers.index') }}">
-                                <span>👨‍🏫</span> Guru
+                        <li class="nav-item dropdown">
+                            <a class="apple-nav-link dropdown-toggle {{ request()->routeIs('results.admin', 'admin.grades.*') ? 'active' : '' }}"
+                               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span>📈</span> Nilai &amp; Hasil
                             </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="apple-nav-link {{ request()->routeIs('admin.grades.*') ? 'active' : '' }}"
-                               href="{{ route('admin.grades.index') }}">
-                                <span>📈</span> Rekap Nilai
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="apple-nav-link {{ request()->routeIs('results.admin') ? 'active' : '' }}"
-                               href="{{ route('results.admin') }}">
-                                <span>📋</span> Hasil Ujian
-                            </a>
+                            <ul class="dropdown-menu apple-glass-dropdown shadow-lg">
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center gap-2 {{ request()->routeIs('results.admin') ? 'active' : '' }}"
+                                       href="{{ route('results.admin') }}">
+                                        <span>📋</span> Hasil Ujian
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center gap-2 {{ request()->routeIs('admin.grades.*') ? 'active' : '' }}"
+                                       href="{{ route('admin.grades.index') }}">
+                                        <span>📈</span> Rekap &amp; Ekspor Nilai
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
                         <li class="nav-item">
                             <a class="apple-nav-link {{ request()->routeIs('admin.school-settings.*') ? 'active' : '' }}"
@@ -91,25 +113,59 @@
                                 <span>📡</span> Monitoring Ujian
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="apple-nav-link {{ request()->routeIs('results.admin') ? 'active' : '' }}"
-                               href="{{ route('results.admin') }}">
-                                <span>📋</span> Hasil Ujian
+                        <li class="nav-item dropdown">
+                            <a class="apple-nav-link dropdown-toggle {{ request()->routeIs('results.admin', 'admin.grades.*') ? 'active' : '' }}"
+                               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span>📈</span> Nilai &amp; Hasil
                             </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="apple-nav-link {{ request()->routeIs('admin.grades.*') ? 'active' : '' }}"
-                               href="{{ route('admin.grades.index') }}">
-                                <span>📈</span> Rekap Nilai
-                            </a>
+                            <ul class="dropdown-menu apple-glass-dropdown shadow-lg">
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center gap-2 {{ request()->routeIs('results.admin') ? 'active' : '' }}"
+                                       href="{{ route('results.admin') }}">
+                                        <span>📋</span> Hasil Ujian
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center gap-2 {{ request()->routeIs('admin.grades.*') ? 'active' : '' }}"
+                                       href="{{ route('admin.grades.index') }}">
+                                        <span>📈</span> Rekap &amp; Ekspor Nilai
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
                     @endif
-                    @if(in_array(auth()->user()->role, ['admin', 'guru']))
+                    @if(auth()->user()->role === 'guru')
+                        <li class="nav-item">
+                            <a class="apple-nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
+                               href="{{ route('dashboard') }}">
+                                <span>📊</span> Dashboard
+                            </a>
+                        </li>
                         <li class="nav-item">
                             <a class="apple-nav-link {{ request()->routeIs('exams.*') ? 'active' : '' }}"
                                href="{{ route('exams.index') }}">
                                 <span>📝</span> Kelola Ujian
                             </a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="apple-nav-link dropdown-toggle {{ request()->routeIs('results.admin', 'admin.grades.*') ? 'active' : '' }}"
+                               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span>📈</span> Nilai &amp; Hasil
+                            </a>
+                            <ul class="dropdown-menu apple-glass-dropdown shadow-lg">
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center gap-2 {{ request()->routeIs('results.admin') ? 'active' : '' }}"
+                                       href="{{ route('results.admin') }}">
+                                        <span>📋</span> Hasil Ujian
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center gap-2 {{ request()->routeIs('admin.grades.*') ? 'active' : '' }}"
+                                       href="{{ route('admin.grades.index') }}">
+                                        <span>📈</span> Rekap &amp; Ekspor Nilai
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
                     @endif
                     @if(auth()->user()->role === 'siswa')
@@ -161,7 +217,7 @@
     </nav>
 </header>
 
-<main class="container-fluid py-2" style="max-width: 1280px;">
+<main class="container-fluid py-2" style="max-width: 1380px;">
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             <span class="fs-5">✨</span>

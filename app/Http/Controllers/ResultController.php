@@ -21,11 +21,22 @@ class ResultController extends Controller
 
     public function admin(Request $r)
     {
+        $user = $r->user();
+        $isGuru = $user->role === 'guru';
+
         $query = Attempt::with(['exam', 'user'])
             ->whereNotNull('submitted_at')
             ->latest('submitted_at');
 
+        if ($isGuru) {
+            $query->whereHas('exam', fn($q) => $q->where('created_by', $user->id));
+        }
+
         if ($r->filled('exam_id')) {
+            if ($isGuru) {
+                $examBelongsToGuru = Exam::where('id', $r->exam_id)->where('created_by', $user->id)->exists();
+                abort_unless($examBelongsToGuru, 403, 'Anda tidak memiliki akses ke hasil ujian ini.');
+            }
             $query->where('exam_id', $r->exam_id);
         }
 
@@ -47,13 +58,23 @@ class ResultController extends Controller
         }
 
         $attempts = $query->paginate(30)->withQueryString();
-        $exams = Exam::orderBy('title')->get(['id', 'title', 'subject']);
+
+        $examQuery = Exam::orderBy('title');
+        if ($isGuru) {
+            $examQuery->where('created_by', $user->id);
+        }
+        $exams = $examQuery->get(['id', 'title', 'subject']);
 
         return view('results.admin', compact('attempts', 'exams'));
     }
 
     public function release(Request $r, Attempt $attempt)
     {
+        $user = $r->user();
+        if ($user->role === 'guru' && $attempt->exam->created_by != $user->id) {
+            abort(403, 'Anda tidak memiliki akses untuk merilis nilai ujian ini.');
+        }
+
         $attempt->update(['is_released' => true]);
         $attempt->exam->update(['results_released' => true]);
 
@@ -68,9 +89,16 @@ class ResultController extends Controller
      */
     public function bulkRelease(Request $r)
     {
+        $user = $r->user();
+        $isGuru = $user->role === 'guru';
+
         // 1. Rilis berdasarkan pilihan checkbox peserta
         if ($r->filled('attempt_ids') && is_array($r->attempt_ids)) {
-            $attempts = Attempt::with('exam')->whereIn('id', $r->attempt_ids)->get();
+            $query = Attempt::with('exam')->whereIn('id', $r->attempt_ids);
+            if ($isGuru) {
+                $query->whereHas('exam', fn($q) => $q->where('created_by', $user->id));
+            }
+            $attempts = $query->get();
             $count = 0;
 
             foreach ($attempts as $a) {
@@ -87,6 +115,10 @@ class ResultController extends Controller
         // 2. Rilis semua nilai untuk satu ujian tertentu
         if ($r->filled('exam_id')) {
             $exam = Exam::findOrFail($r->exam_id);
+            if ($isGuru && $exam->created_by != $user->id) {
+                abort(403, 'Anda tidak memiliki akses untuk merilis nilai ujian ini.');
+            }
+
             $updated = Attempt::where('exam_id', $exam->id)
                 ->whereNotNull('submitted_at')
                 ->update(['is_released' => true]);
@@ -96,8 +128,12 @@ class ResultController extends Controller
             return back()->with('success', "Seluruh nilai ({$updated} peserta) untuk ujian '{$exam->title}' berhasil dirilis ke siswa.");
         }
 
-        // 3. Rilis semua nilai di sistem
+        // 3. Rilis semua nilai di sistem (hanya admin)
         if ($r->boolean('release_all')) {
+            if ($isGuru) {
+                abort(403, 'Aksi ini hanya dapat dilakukan oleh administrator.');
+            }
+
             $updated = Attempt::whereNotNull('submitted_at')->update(['is_released' => true]);
             Exam::whereHas('attempts', fn($q) => $q->whereNotNull('submitted_at'))->update(['results_released' => true]);
 

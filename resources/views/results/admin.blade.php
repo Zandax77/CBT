@@ -61,7 +61,7 @@
             </div>
             
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                @if(auth()->user()->role === 'admin')
+                @if(auth()->user()->role === 'admin' || auth()->user()->role === 'guru')
                     {{-- Tombol Rilis Terpilih --}}
                     <button type="submit" class="btn btn-sm btn-primary" id="btnReleaseSelected" disabled>
                         <span>📢</span> Rilis Nilai Terpilih (<span id="selectedCount">0</span>)
@@ -74,10 +74,12 @@
                         </button>
                     @endif
 
+                    @if(auth()->user()->role === 'admin')
                     {{-- Tombol Rilis Seluruh Nilai Selesai di Sistem --}}
                     <button type="button" class="btn btn-sm btn-outline-success" onclick="releaseAllOverall()">
                         <span>✨</span> Rilis Seluruh Nilai Selesai
                     </button>
+                    @endif
                 @endif
                 <a href="{{ route('admin.grades.index', request()->only(['exam_id', 'kelas'])) }}" class="btn btn-sm btn-secondary">
                     <span>📈</span> Buka Rekap Nilai
@@ -142,7 +144,7 @@
                         </td>
                         <td class="text-center" style="white-space: nowrap;">
                             <div class="table-action-group justify-content-center">
-                                @if(auth()->user()->role === 'admin')
+                                @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'guru' && $a->exam->created_by == auth()->id()))
                                     @if(!$a->is_released)
                                         <button type="button" class="btn-action btn-action-primary" onclick="releaseSingle({{ $a->id }}, '{{ addslashes($a->user->name) }}')">
                                             <span>📢</span> Rilis Nilai

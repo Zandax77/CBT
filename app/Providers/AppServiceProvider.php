@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Models\SchoolSetting;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\View;
+use App\Models\User;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -21,6 +23,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Paginator::useBootstrapFive();
+
         View::composer('*', function ($view) {
             try {
                 $view->with('school', SchoolSetting::instance());
@@ -32,5 +36,16 @@ class AppServiceProvider extends ServiceProvider
                 ]));
             }
         });
+
+        // Ensure an admin account exists on first run (tables empty)
+        if (\App\Models\User::count() === 0) {
+            \App\Models\User::create([
+                'name' => 'Administrator CBT',
+                'username' => 'admin',
+                'email' => 'admin@cbt.local',
+                'password' => 'Password123!', // hashed via model casts
+                'role' => 'admin',
+            ]);
+        }
     }
 }

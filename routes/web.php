@@ -27,6 +27,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:admin,guru')->group(function () {
         Route::post('/exams/bulk-destroy', [ExamController::class, 'bulkDestroy'])->name('exams.bulk_destroy');
+        Route::get('/exams/{exam}/peserta', [ExamController::class, 'participants'])->name('exams.participants');
         Route::resource('exams', ExamController::class)->except(['show']);
         Route::get('/exams/{exam}/import', [QuestionImportController::class, 'form'])->name('questions.import.form');
         Route::post('/exams/{exam}/import', [QuestionImportController::class, 'import'])->name('questions.import');
@@ -34,6 +35,7 @@ Route::middleware('auth')->group(function () {
 
         // Kelola soal manual (dengan gambar)
         Route::get('/exams/{exam}/soal', [QuestionController::class, 'index'])->name('questions.list');
+        Route::post('/exams/{exam}/soal/shuffle', [QuestionController::class, 'shuffleByType'])->name('questions.shuffle');
         Route::get('/exams/{exam}/soal/tambah', [QuestionController::class, 'create'])->name('questions.create');
         Route::post('/exams/{exam}/soal', [QuestionController::class, 'store'])->name('questions.store');
         Route::get('/exams/{exam}/soal/{question}/edit', [QuestionController::class, 'edit'])->name('questions.edit');
@@ -51,18 +53,25 @@ Route::middleware('auth')->group(function () {
         Route::get('/hasil', [ResultController::class, 'student'])->name('results.student');
     });
 
-    // Monitoring & Hasil Ujian (Admin & Kepala Sekolah)
+    // Monitoring (Admin & Kepala Sekolah)
     Route::middleware('role:admin,kepala_sekolah')->group(function () {
         Route::get('/monitoring', [ExamMonitoringController::class, 'index'])->name('monitoring.index');
+    });
+
+    // Hasil & Rekap Nilai Ujian (Admin, Kepala Sekolah & Guru)
+    Route::middleware('role:admin,kepala_sekolah,guru')->group(function () {
         Route::get('/admin/hasil', [ResultController::class, 'admin'])->name('results.admin');
         Route::get('/admin/rekap-nilai', [GradeExportController::class, 'index'])->name('admin.grades.index');
         Route::get('/admin/rekap-nilai/export', [GradeExportController::class, 'export'])->name('admin.grades.export');
     });
 
-    Route::middleware('role:admin')->group(function () {
+    // Rilis Nilai Ujian (Admin & Guru pemilik ujian)
+    Route::middleware('role:admin,guru')->group(function () {
         Route::post('/admin/hasil/rilis-masal', [ResultController::class, 'bulkRelease'])->name('results.bulk_release');
         Route::post('/admin/hasil/{attempt}/rilis', [ResultController::class, 'release'])->name('results.release');
+    });
 
+    Route::middleware('role:admin')->group(function () {
         // Pengelolaan siswa (hanya admin)
         Route::post('/admin/siswa-bulk-destroy', [StudentController::class, 'bulkDestroy'])->name('admin.students.bulk_destroy');
         Route::resource('admin/siswa', StudentController::class)
