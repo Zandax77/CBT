@@ -38,14 +38,18 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Ensure an admin account exists on first run (tables empty)
-        if (\App\Models\User::count() === 0) {
-            \App\Models\User::create([
-                'name' => 'Administrator CBT',
-                'username' => 'admin',
-                'email' => 'admin@cbt.local',
-                'password' => 'Password123!', // hashed via model casts
-                'role' => 'admin',
-            ]);
+        try {
+            if (\App\Models\User::count() === 0) {
+                \App\Models\User::create([
+                    'name' => 'Administrator CBT',
+                    'username' => 'admin',
+                    'email' => 'admin@cbt.local',
+                    'password' => 'Password123!', // hashed via model casts
+                    'role' => 'admin',
+                ]);
+            }
+        } catch (\Throwable) {
+            // Ignore when database is not yet migrated or unreachable
         }
     }
 }

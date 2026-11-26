@@ -63,6 +63,12 @@
                         Masuk ke Akun
                     </button>
                 </div>
+
+                <div class="text-center mt-1">
+                    <button type="button" class="btn btn-sm btn-pwa-install-nav d-none w-100 justify-content-center" style="height: 38px !important;">
+                        <span>📲</span> Pasang Aplikasi di HP (PWA)
+                    </button>
+                </div>
             </form>
 
             <div class="text-center mt-4 pt-3 border-top" style="border-color: rgba(0,0,0,0.06) !important;">

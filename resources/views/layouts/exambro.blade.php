@@ -13,12 +13,12 @@
     <meta name="student-name" content="{{ auth()->user()->name ?? '' }}">
     <meta name="student-user" content="{{ auth()->user()->username ?? auth()->user()->name ?? '' }}">
 
-    {{-- PWA Manifest --}}
+    {{-- PWA Manifest & Icons (Android & iOS) --}}
     <link rel="manifest" href="/manifest.json">
-
-    {{-- iOS icons --}}
-    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png">
     <link rel="apple-touch-startup-image" href="/icons/icon-512.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
 
     <title>@yield('title', $school->school_name ?: 'CBT Sekolah')</title>
 
@@ -204,15 +204,17 @@
 
 {{-- ── Top exam bar (Apple VisionOS / macOS Frosted Glass HUD) ── --}}
 <div id="exambar">
-    <div class="d-flex align-items-center gap-2" style="min-width:0">
-        @include('partials.school-brand', ['asLink' => false])
-        <div style="min-width:0; border-left: 1px solid rgba(0,0,0,0.1); padding-left: 10px; margin-left: 6px;">
-            <div class="exam-title">@yield('exam-title','Ujian')</div>
-            <div class="exam-info">@yield('exam-info','')</div>
+    <div class="d-flex align-items-center gap-2 exambar-left" style="min-width:0">
+        @include('partials.school-brand', ['asLink' => false, 'brandClass' => 'exambar-school-brand'])
+        <div class="exam-title-group" style="min-width:0; border-left: 1px solid rgba(0,0,0,0.1); padding-left: 8px; margin-left: 4px;">
+            <div class="exam-title text-truncate">@yield('exam-title','Ujian')</div>
+            <div class="exam-info text-truncate d-none d-sm-block">@yield('exam-info','')</div>
         </div>
     </div>
-    <div class="d-flex align-items-center gap-2">
-        <button id="fsBtn" onclick="triggerEnterFS()" title="Layar Penuh">⛶ Layar Penuh</button>
+    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        <button id="fsBtn" onclick="triggerEnterFS()" title="Layar Penuh" class="btn-fs-pill">
+            <span>⛶</span> <span class="d-none d-md-inline">Layar Penuh</span>
+        </button>
         <div id="timerBox">
             <div class="timer-label">Sisa Waktu</div>
             <div class="timer-value" id="timerVal">--:--</div>

@@ -2,9 +2,21 @@
 <html lang="id">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', $school->school_name ?: 'CBT Sekolah')</title>
+
+    <!-- PWA & Mobile Web App Meta Tags (Android & iOS) -->
+    <meta name="theme-color" content="#0071e3">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="{{ $school->school_name ?: 'CBT Sekolah' }}">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
     
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -191,9 +203,12 @@
                 </ul>
                 @endauth
 
-                <div class="d-flex align-items-center gap-2 ms-auto mt-2 mt-lg-0 flex-nowrap">
+                <div class="d-flex align-items-center gap-2 ms-auto mt-2 mt-lg-0 flex-wrap flex-lg-nowrap nav-user-actions">
+                    <button type="button" class="btn btn-sm btn-pwa-install-nav d-none" title="Pasang Aplikasi CBT">
+                        <span>📲</span> <span class="d-none d-sm-inline">Pasang App</span>
+                    </button>
                     @auth
-                        <div class="user-glass-pill flex-shrink-0">
+                        <div class="user-glass-pill flex-grow-1 flex-lg-grow-0">
                             <span class="user-avatar-indicator">👤</span>
                             <span class="user-name-text">{{ auth()->user()->name }}</span>
                             <span class="user-role-badge {{ auth()->user()->role === 'kepala_sekolah' ? 'user-role-kepsek' : '' }}">
@@ -250,7 +265,16 @@
     @yield('content')
 </main>
 
+@include('partials.pwa-install')
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+}
+</script>
 @stack('scripts')
 </body>
 </html>

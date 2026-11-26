@@ -1,28 +1,58 @@
 {
-    "name": "ExamBro CBT Sekolah",
-    "short_name": "ExamBro",
-    "description": "Browser ujian aman untuk CBT Sekolah",
-    "start_url": "/ujian",
-    "display": "standalone",
-    "background_color": "#f0f2ff",
-    "theme_color": "#1a237e",
-    "orientation": "portrait-primary",
+    "name": "CBT ExamBro Sekolah",
+    "short_name": "CBT Sekolah",
+    "description": "Sistem Ujian Berbasis Komputer & ExamBro PWA Terproteksi",
+    "start_url": "/",
+    "id": "/",
     "scope": "/",
+    "display": "standalone",
+    "display_override": ["standalone", "minimal-ui", "window-controls-overlay"],
+    "background_color": "#f5f5f7",
+    "theme_color": "#0071e3",
+    "orientation": "any",
     "lang": "id",
     "icons": [
         {
             "src": "/icons/icon-192.png",
             "sizes": "192x192",
             "type": "image/png",
-            "purpose": "any maskable"
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
         },
         {
             "src": "/icons/icon-512.png",
             "sizes": "512x512",
             "type": "image/png",
-            "purpose": "any maskable"
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
         }
     ],
-    "categories": ["education"],
+    "shortcuts": [
+        {
+            "name": "Daftar Ujian",
+            "short_name": "Ujian",
+            "description": "Buka daftar ujian siswa",
+            "url": "/ujian",
+            "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Dashboard",
+            "short_name": "Dashboard",
+            "description": "Buka dashboard utama",
+            "url": "/dashboard",
+            "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+        }
+    ],
+    "categories": ["education", "productivity"],
     "prefer_related_applications": false
 }

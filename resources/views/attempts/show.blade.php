@@ -75,8 +75,8 @@
 
         {{-- Header Kartu Soal --}}
         <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2" style="border-color: rgba(0,0,0,0.08) !important;">
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <span class="badge bg-primary px-3 py-2 fs-6 fw-bold rounded-pill shadow-sm">
+            <div class="d-flex align-items-center gap-1 gap-sm-2 flex-wrap">
+                <span class="badge bg-primary px-2 px-sm-3 py-2 fs-6 fw-bold rounded-pill shadow-sm">
                     Soal No. {{ $i + 1 }} <span class="fw-normal opacity-75">/ {{ $questions->count() }}</span>
                 </span>
                 <span class="badge
@@ -85,19 +85,19 @@
                     @elseif($q->type==='BENAR_SALAH') bg-info-subtle text-info border border-info-subtle
                     @else bg-warning-subtle text-warning border border-warning-subtle @endif" style="font-size:.75rem">
                     @if($q->type === 'PG') Pilihan Ganda
-                    @elseif($q->type === 'PG_MULTI') Pilihan Ganda Kompleks
-                    @elseif($q->type === 'BENAR_SALAH') Benar / Salah
+                    @elseif($q->type === 'PG_MULTI') PG Kompleks
+                    @elseif($q->type === 'BENAR_SALAH') B / S
                     @else Menjodohkan
                     @endif
                 </span>
-                <span class="badge bg-light text-secondary border" style="font-size:.72rem;">
+                <span class="badge bg-light text-secondary border d-none d-sm-inline-block" style="font-size:.72rem;">
                     Bobot: {{ $q->weight }}
                 </span>
             </div>
 
-            <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 rounded-pill px-3 shadow-sm"
+            <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 rounded-pill px-2 px-sm-3 shadow-sm"
                     onclick="openQuestionPalette()" title="Buka Daftar Nomor Soal">
-                <span>📋</span> Daftar Soal (<span class="answered-count-badge">0</span>/{{ $questions->count() }})
+                <span>📋</span> <span class="d-none d-sm-inline">Daftar Soal</span> (<span class="answered-count-badge">0</span>/{{ $questions->count() }})
             </button>
         </div>
 
@@ -155,14 +155,14 @@
         <div class="mt-3">
             <div class="small text-secondary fw-semibold mb-2">Pasangkan pernyataan di kolom kiri dengan jawaban di kolom kanan:</div>
             @foreach($premises as $premiseKey => $premiseText)
-            <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="d-flex align-items-stretch align-items-sm-center gap-2 mb-2 flex-column flex-sm-row">
                 <div class="flex-grow-1 glass-well py-2 px-3 small">
                     <b>{{ $premiseKey }}.</b> {{ $premiseText }}
                 </div>
                 <select class="form-select form-select-sm match-select"
                         data-qid="{{ $q->id }}"
                         data-premise="{{ $premiseKey }}"
-                        style="max-width:190px">
+                        style="min-width: 170px;">
                     <option value="">— pilih pasangan —</option>
                     @foreach($pairs as $pairIdx => $pairText)
                     <option value="{{ $pairIdx + 1 }}"
@@ -263,39 +263,41 @@
     @csrf
 </form>
 
-{{-- ── Bar Navigasi Pengerjaan Per Halaman (Pemisahan Jarak & Posisi Tombol) ── --}}
-<div class="d-flex justify-content-between align-items-center gap-3 flex-wrap" style="max-width: 760px; margin: 0 auto;">
-    {{-- Sisi Kiri: Navigasi Pindah Soal (Sebelumnya & Selanjutnya) --}}
-    <div class="d-flex align-items-center gap-2">
-        <button type="button" id="btnPrev" class="btn btn-secondary px-3 px-sm-4 py-2 fw-semibold d-flex align-items-center gap-1 shadow-sm"
+{{-- ── Bar Navigasi Pengerjaan Per Halaman (Mobile Ergonomic & Clean) ── --}}
+<div class="exam-bottom-nav" style="max-width: 760px; margin: 0 auto;">
+    <div class="d-flex justify-content-between align-items-center gap-1 gap-sm-2 w-100 flex-nowrap">
+        {{-- Sisi Kiri: Sebelumnya --}}
+        <button type="button" id="btnPrev" class="btn btn-secondary px-2 px-sm-3 py-2 fw-semibold d-flex align-items-center gap-1 shadow-sm flex-shrink-0"
                 onclick="navigateQuestion(-1)">
-            <span>⬅</span> Sebelumnya
+            <span>⬅</span> <span class="d-none d-sm-inline">Sebelumnya</span>
         </button>
-        <button type="button" id="btnNext" class="btn btn-primary px-3 px-sm-4 py-2 fw-semibold d-flex align-items-center gap-1 shadow-sm"
-                onclick="navigateQuestion(1)">
-            Selanjutnya <span>➡</span>
-        </button>
-    </div>
 
-    {{-- Bagian Tengah: Tinjau Ragu-ragu & Palet Soal --}}
-    <div class="d-flex align-items-center gap-2">
-        <button type="button" id="btnDoubt" class="btn btn-outline-warning px-3 py-2 fw-semibold d-flex align-items-center gap-1 shadow-sm"
-                onclick="toggleDoubtful()" title="Tandai ragu-ragu untuk ditinjau ulang nanti">
-            <span id="doubtIcon">🏳️</span> <span id="doubtLabel">Ragu-ragu</span>
-        </button>
-        <button type="button" class="btn btn-outline-primary px-3 py-2 fw-semibold d-flex align-items-center gap-1 shadow-sm"
-                onclick="openQuestionPalette()" title="Buka daftar nomor soal">
-            <span>📋</span> Nomor Soal
-        </button>
-    </div>
+        {{-- Bagian Tengah: Ragu-ragu & Nomor Soal --}}
+        <div class="d-flex align-items-center gap-1 gap-sm-2 justify-content-center">
+            <button type="button" id="btnDoubt" class="btn btn-outline-warning px-2 px-sm-3 py-2 fw-semibold d-flex align-items-center gap-1 shadow-sm flex-shrink-0"
+                    onclick="toggleDoubtful()" title="Tandai ragu-ragu untuk ditinjau ulang nanti">
+                <span id="doubtIcon">🏳️</span> <span id="doubtLabel" class="d-none d-sm-inline">Ragu-ragu</span>
+            </button>
+            <button type="button" class="btn btn-outline-primary px-2 px-sm-3 py-2 fw-semibold d-flex align-items-center gap-1 shadow-sm flex-shrink-0"
+                    onclick="openQuestionPalette()" title="Buka daftar nomor soal">
+                <span>📋</span> <span class="d-none d-sm-inline">Nomor</span> Soal
+            </button>
+        </div>
 
-    {{-- Sisi Kanan (Terpisah Jarak Jauh): Tombol Kumpulkan Jawaban (Hanya Tampil di Halaman Soal Terakhir) --}}
-    <div class="ms-auto ms-sm-0 {{ $questions->count() > 1 ? 'd-none' : '' }}" id="submitBtnContainer"
-         style="{{ $questions->count() > 1 ? 'display: none !important;' : '' }}">
-        <button type="button" id="btnSubmitPage" class="btn btn-danger px-3 px-sm-4 py-2 fw-bold d-flex align-items-center gap-1 shadow-sm"
-                onclick="confirmSubmit()" title="Kumpulkan jawaban dan selesaikan ujian">
-            <span>✓</span> Kumpulkan Jawaban
-        </button>
+        {{-- Sisi Kanan: Selanjutnya & Kumpulkan --}}
+        <div class="d-flex align-items-center gap-1 flex-shrink-0">
+            <button type="button" id="btnNext" class="btn btn-primary px-2 px-sm-3 py-2 fw-semibold d-flex align-items-center gap-1 shadow-sm"
+                    onclick="navigateQuestion(1)">
+                <span class="d-none d-sm-inline">Selanjutnya</span> <span>➡</span>
+            </button>
+            <div class="{{ $questions->count() > 1 ? 'd-none' : '' }}" id="submitBtnContainer"
+                 style="{{ $questions->count() > 1 ? 'display: none !important;' : '' }}">
+                <button type="button" id="btnSubmitPage" class="btn btn-danger px-2 px-sm-3 py-2 fw-bold d-flex align-items-center gap-1 shadow-sm"
+                        onclick="confirmSubmit()" title="Kumpulkan jawaban dan selesaikan ujian">
+                    <span>✓</span> <span class="d-none d-sm-inline">Kumpulkan</span>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 @endsection
