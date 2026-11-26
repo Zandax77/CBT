@@ -19,7 +19,7 @@ class StudentController extends Controller
      * Generate username unik dari nama siswa.
      * Format: huruf kecil tanpa spasi + angka 4 digit acak (diulang jika sudah ada).
      */
-    private function generateUsername(string $name, array $takenUsernames = []): string
+    private function generateUsername(string $name, array &$takenUsernames = [], array &$existingUsernames = []): string
     {
         // Ambil bagian nama (huruf + angka), lowercase
         $base = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $name));
@@ -32,8 +32,9 @@ class StudentController extends Controller
         do {
             $username = $base . rand(1000, 9999);
         } while (
-            User::where('username', $username)->exists() ||
-            in_array($username, $takenUsernames, true)
+            isset($existingUsernames[$username]) ||
+            isset($takenUsernames[$username]) ||
+            (empty($existingUsernames) && User::where('username', $username)->exists())
         );
 
         return $username;
@@ -263,6 +264,9 @@ class StudentController extends Controller
      */
     public function import(Request $request)
     {
+        ini_set('max_execution_time', '300');
+        set_time_limit(300);
+
         $request->validate([
             'file' => ['required', 'file', 'mimes:xlsx,xls', 'max:5120'],
         ]);
@@ -292,11 +296,16 @@ class StudentController extends Controller
         $hasPassword = in_array('password', $rawHeaders, true);
         $passwordIdx = array_search('password', $rawHeaders, true);
 
-        $valid        = [];
-        $credentials  = [];   // untuk ditampilkan ke admin
-        $errors       = [];
-        $takenUsernames = [];
-        $seenNumbers  = [];
+        // Preload semua nomor induk & username yang sudah ada untuk lookup instan O(1)
+        $existingNumbers   = User::whereNotNull('student_number')->pluck('student_number')->flip()->all();
+        $existingUsernames = User::pluck('username')->flip()->all();
+
+        $valid             = [];
+        $credentials       = [];   // untuk ditampilkan ke admin
+        $errors            = [];
+        $takenUsernames    = [];
+        $seenNumbers       = [];
+        $passwordHashCache = [];
 
         foreach (array_slice($rows, 1) as $index => $row) {
             $line = $index + 2;
@@ -322,13 +331,12 @@ class StudentController extends Controller
                 continue;
             }
 
-            if (User::where('student_number', $nomorInduk)->exists() ||
-                in_array($nomorInduk, $seenNumbers, true)) {
+            if (isset($existingNumbers[$nomorInduk]) || isset($seenNumbers[$nomorInduk])) {
                 $errors[] = "Baris {$line}: nomor induk '{$nomorInduk}' sudah digunakan atau duplikat.";
                 continue;
             }
 
-            $seenNumbers[] = $nomorInduk;
+            $seenNumbers[$nomorInduk] = true;
 
             // Username
             $rawUsername = ($hasUsername && $usernameIdx !== false) ? strtolower(trim((string) ($row[$usernameIdx] ?? ''))) : '';
@@ -341,15 +349,15 @@ class StudentController extends Controller
                     $errors[] = "Baris {$line}: username '{$rawUsername}' maksimal 50 karakter.";
                     continue;
                 }
-                if (User::where('username', $rawUsername)->exists() || in_array($rawUsername, $takenUsernames, true)) {
+                if (isset($existingUsernames[$rawUsername]) || isset($takenUsernames[$rawUsername])) {
                     $errors[] = "Baris {$line}: username '{$rawUsername}' sudah digunakan.";
                     continue;
                 }
                 $username = $rawUsername;
             } else {
-                $username = $this->generateUsername($nama, $takenUsernames);
+                $username = $this->generateUsername($nama, $takenUsernames, $existingUsernames);
             }
-            $takenUsernames[] = $username;
+            $takenUsernames[$username] = true;
 
             // Password
             $rawPassword = ($hasPassword && $passwordIdx !== false) ? trim((string) ($row[$passwordIdx] ?? '')) : '';
@@ -363,6 +371,12 @@ class StudentController extends Controller
                 $plainPassword = $this->generatePassword();
             }
 
+            // Optimasi Bcrypt: cache hash agar password default/sama tidak di-hash ulang (10x lebih cepat)
+            if (!isset($passwordHashCache[$plainPassword])) {
+                $passwordHashCache[$plainPassword] = Hash::make($plainPassword, ['rounds' => 10]);
+            }
+            $hashedPassword = $passwordHashCache[$plainPassword];
+
             $parts = preg_split('/\s+/', $kelas);
             $gradeLevel = $parts[0] ?? null;
             $major = $parts[1] ?? null;
@@ -375,7 +389,7 @@ class StudentController extends Controller
                 'grade_level'    => $gradeLevel,
                 'major'          => $major,
                 'plain_password' => $plainPassword,
-                'password'       => Hash::make($plainPassword),
+                'password'       => $hashedPassword,
                 'role'           => 'siswa',
                 'created_at'     => now(),
                 'updated_at'     => now(),
@@ -402,9 +416,10 @@ class StudentController extends Controller
             ]);
         }
 
+        // Bulk insert dengan batch chunking 100 baris untuk kecepatan maksimal
         DB::transaction(function () use ($valid) {
-            foreach ($valid as $student) {
-                User::create($student);
+            foreach (array_chunk($valid, 100) as $chunk) {
+                User::insert($chunk);
             }
         });
 

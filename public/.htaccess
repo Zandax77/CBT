@@ -23,3 +23,23 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# PWA Header & MIME Type Configurations
+<IfModule mod_headers.c>
+    # Service Worker harus selalu up-to-date (tidak boleh dicache oleh HTTP browser/CDN)
+    <Files "sw.js">
+        Header set Cache-Control "max-age=0, no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "Wed, 11 Jan 1984 05:00:00 GMT"
+    </Files>
+
+    # Manifest file
+    <Files "manifest.json">
+        Header set Cache-Control "max-age=604800, public"
+    </Files>
+</IfModule>
+
+<IfModule mod_mime.c>
+    AddType application/manifest+json .json
+    AddType application/javascript .js
+</IfModule>

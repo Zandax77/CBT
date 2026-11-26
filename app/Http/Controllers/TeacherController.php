@@ -19,7 +19,7 @@ class TeacherController extends Controller
      * Generate username unik untuk guru dari nama.
      * Format: 'guru_' + huruf kecil nama (max 15 karakter) + 3-4 digit angka acak.
      */
-    private function generateUsername(string $name, array $takenUsernames = []): string
+    private function generateUsername(string $name, array &$takenUsernames = [], array &$existingUsernames = []): string
     {
         $base = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $name));
         if ($base === '') {
@@ -30,8 +30,9 @@ class TeacherController extends Controller
         do {
             $username = $base . rand(100, 999);
         } while (
-            User::where('username', $username)->exists() ||
-            in_array($username, $takenUsernames, true)
+            isset($existingUsernames[$username]) ||
+            isset($takenUsernames[$username]) ||
+            (empty($existingUsernames) && User::where('username', $username)->exists())
         );
 
         return $username;
@@ -220,6 +221,9 @@ class TeacherController extends Controller
      */
     public function import(Request $request)
     {
+        ini_set('max_execution_time', '300');
+        set_time_limit(300);
+
         $request->validate([
             'file' => ['required', 'file', 'mimes:xlsx,xls', 'max:5120'],
         ]);
@@ -251,11 +255,16 @@ class TeacherController extends Controller
         $hasEmail    = in_array('email', $headers, true);
         $emailIdx    = array_search('email', $headers, true);
 
-        $valid          = [];
-        $credentials    = [];
-        $errors         = [];
-        $takenUsernames = [];
-        $takenEmails    = [];
+        // Preload username & email yang sudah ada untuk lookup O(1) instan
+        $existingUsernames = User::pluck('username')->flip()->all();
+        $existingEmails    = User::whereNotNull('email')->pluck('email')->flip()->all();
+
+        $valid             = [];
+        $credentials       = [];
+        $errors            = [];
+        $takenUsernames    = [];
+        $takenEmails       = [];
+        $passwordHashCache = [];
 
         foreach (array_slice($rows, 1) as $index => $row) {
             $line = $index + 2;
@@ -290,15 +299,15 @@ class TeacherController extends Controller
                     $errors[] = "Baris {$line}: username '{$rawUsername}' maksimal 50 karakter.";
                     continue;
                 }
-                if (User::where('username', $rawUsername)->exists() || in_array($rawUsername, $takenUsernames, true)) {
+                if (isset($existingUsernames[$rawUsername]) || isset($takenUsernames[$rawUsername])) {
                     $errors[] = "Baris {$line}: username '{$rawUsername}' sudah digunakan.";
                     continue;
                 }
                 $username = $rawUsername;
             } else {
-                $username = $this->generateUsername($nama, $takenUsernames);
+                $username = $this->generateUsername($nama, $takenUsernames, $existingUsernames);
             }
-            $takenUsernames[] = $username;
+            $takenUsernames[$username] = true;
 
             // Password
             $rawPassword = ($hasPassword && $passwordIdx !== false) ? trim((string) ($row[$passwordIdx] ?? '')) : '';
@@ -312,6 +321,12 @@ class TeacherController extends Controller
                 $plainPassword = $this->generatePassword();
             }
 
+            // Optimasi Bcrypt: cache hash
+            if (!isset($passwordHashCache[$plainPassword])) {
+                $passwordHashCache[$plainPassword] = Hash::make($plainPassword, ['rounds' => 10]);
+            }
+            $hashedPassword = $passwordHashCache[$plainPassword];
+
             // Email
             $rawEmail = ($hasEmail && $emailIdx !== false) ? trim((string) ($row[$emailIdx] ?? '')) : '';
             $email = null;
@@ -320,12 +335,12 @@ class TeacherController extends Controller
                     $errors[] = "Baris {$line}: format email '{$rawEmail}' tidak valid.";
                     continue;
                 }
-                if (User::where('email', $rawEmail)->exists() || in_array($rawEmail, $takenEmails, true)) {
+                if (isset($existingEmails[$rawEmail]) || isset($takenEmails[$rawEmail])) {
                     $errors[] = "Baris {$line}: email '{$rawEmail}' sudah digunakan.";
                     continue;
                 }
                 $email = $rawEmail;
-                $takenEmails[] = $email;
+                $takenEmails[$email] = true;
             }
 
             $valid[] = [
@@ -333,7 +348,7 @@ class TeacherController extends Controller
                 'username'       => $username,
                 'email'          => $email,
                 'plain_password' => $plainPassword,
-                'password'       => Hash::make($plainPassword),
+                'password'       => $hashedPassword,
                 'role'           => 'guru',
                 'created_at'     => now(),
                 'updated_at'     => now(),
@@ -359,9 +374,10 @@ class TeacherController extends Controller
             ]);
         }
 
+        // Bulk insert dengan batch chunking
         DB::transaction(function () use ($valid) {
-            foreach ($valid as $teacherData) {
-                User::create($teacherData);
+            foreach (array_chunk($valid, 100) as $chunk) {
+                User::insert($chunk);
             }
         });
 

@@ -115,6 +115,9 @@ class QuestionImportController extends Controller
 
     public function import(Request $r, Exam $exam)
     {
+        ini_set('max_execution_time', '300');
+        set_time_limit(300);
+
         abort_unless($exam->created_by == $r->user()->id || $r->user()->role === 'admin', 403, 'Anda tidak punya akses ke ujian ini.');
         $r->validate([
             'file' => 'required|file|mimes:xlsx|max:5120',

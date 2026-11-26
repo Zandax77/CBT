@@ -109,3 +109,56 @@ Route::middleware('auth')->group(function () {
             ->name('admin.school-settings.update');
     });
 });
+
+// Helper setup deployment untuk cPanel / hPanel Hostinger
+// Berguna jika hosting tidak memiliki akses terminal SSH
+Route::get('/hpanel-setup', function (\Illuminate\Http\Request $request) {
+    $secret = env('DEPLOY_SECRET', env('APP_KEY'));
+    $providedKey = $request->query('key');
+
+    if (empty($secret) || empty($providedKey) || !hash_equals($secret, $providedKey)) {
+        abort(403, 'Akses tidak diizinkan. Kunci rahasia (key) tidak valid atau belum diatur.');
+    }
+
+    $action = $request->query('action', 'all');
+    $results = [];
+
+    // 1. Buat symbolic link storage
+    if ($action === 'all' || $action === 'storage') {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('storage:link');
+            $results['storage:link'] = trim(\Illuminate\Support\Facades\Artisan::output()) ?: 'Storage link berhasil dibuat.';
+        } catch (\Throwable $e) {
+            $results['storage:link'] = 'Catatan: ' . $e->getMessage();
+        }
+    }
+
+    // 2. Jalankan migrasi database
+    if ($action === 'all' || $action === 'migrate') {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            $results['migrate'] = trim(\Illuminate\Support\Facades\Artisan::output()) ?: 'Migrasi database berhasil dijalankan.';
+        } catch (\Throwable $e) {
+            $results['migrate'] = 'Error: ' . $e->getMessage();
+        }
+    }
+
+    // 3. Cache konfigurasi & optimasi performa
+    if ($action === 'all' || $action === 'optimize') {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+            \Illuminate\Support\Facades\Artisan::call('config:cache');
+            \Illuminate\Support\Facades\Artisan::call('route:cache');
+            \Illuminate\Support\Facades\Artisan::call('view:cache');
+            $results['optimize'] = 'Optimasi config, route, dan view cache berhasil diterapkan.';
+        } catch (\Throwable $e) {
+            $results['optimize'] = 'Error: ' . $e->getMessage();
+        }
+    }
+
+    return response()->json([
+        'status'  => 'success',
+        'message' => 'Setup deployment Hostinger berhasil dijalankan.',
+        'details' => $results,
+    ]);
+});
